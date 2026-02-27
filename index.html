@@ -1762,18 +1762,25 @@ function renderTreeNode(node, expanded = true) {
         focusHtml = `<div class="tree-focus">Focus: ${node.focus}</div>`;
     }
     
-    // Build note button for scope items
+    // Build note button for all node levels
     let noteBtn = '';
     let noteRow = '';
-    if (node.level === 'scope') {
+    {
         const noteKey = node.id;
         const existingNote = meetingNotes[noteKey] || '';
         const hasNote = existingNote ? 'has-note' : '';
         const canEdit = typeof isAdmin === 'function' && isAdmin();
+        const placeholders = {
+            competency: 'Add competency-level notes... (e.g., overall alignment decisions, scope boundaries)',
+            es: 'Add ES-level notes... (e.g., assessment alignment, coverage gaps)',
+            group: 'Add group-level notes... (e.g., grouping rationale, cross-references)',
+            scope: 'Add discussion notes... (e.g., stakeholder feedback, decisions)'
+        };
+        const placeholder = placeholders[node.level] || 'Add notes...';
         noteBtn = `<button class="tree-note-btn ${hasNote}" onclick="event.stopPropagation(); toggleTreeNote('${node.id}', this)" title="${existingNote ? 'View discussion notes' : 'Add discussion notes'}">📝</button>`;
         noteRow = `<div class="tree-note-row" id="tree-note-row-${node.id}" onclick="event.stopPropagation()">
             ${canEdit 
-                ? `<textarea class="tree-note-textarea" placeholder="Add discussion notes... (e.g., stakeholder feedback, decisions)" onchange="saveTreeNote('${node.id}', this)">${existingNote}</textarea>`
+                ? `<textarea class="tree-note-textarea" placeholder="${placeholder}" onchange="saveTreeNote('${node.id}', this)">${existingNote}</textarea>`
                 : (existingNote ? `<div class="tree-note-readonly">${existingNote}</div>` : `<div class="tree-note-readonly" style="color:#bbb;font-style:italic;">No notes yet</div>`)
             }
         </div>`;
