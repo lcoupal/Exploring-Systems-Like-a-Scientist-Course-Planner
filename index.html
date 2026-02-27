@@ -1762,13 +1762,12 @@ function renderTreeNode(node, expanded = true) {
         focusHtml = `<div class="tree-focus">Focus: ${node.focus}</div>`;
     }
     
-    // Build note button for all node levels
+    // Build note area for all node levels
     let noteBtn = '';
     let noteRow = '';
     {
         const noteKey = node.id;
         const existingNote = meetingNotes[noteKey] || '';
-        const hasNote = existingNote ? 'has-note' : '';
         const canEdit = typeof isAdmin === 'function' && isAdmin();
         const placeholders = {
             competency: 'Add competency-level notes... (e.g., overall alignment decisions, scope boundaries)',
@@ -1777,13 +1776,16 @@ function renderTreeNode(node, expanded = true) {
             scope: 'Add discussion notes... (e.g., stakeholder feedback, decisions)'
         };
         const placeholder = placeholders[node.level] || 'Add notes...';
-        noteBtn = `<button class="tree-note-btn ${hasNote}" onclick="event.stopPropagation(); toggleTreeNote('${node.id}', this)" title="${existingNote ? 'View discussion notes' : 'Add discussion notes'}">📝</button>`;
-        noteRow = `<div class="tree-note-row" id="tree-note-row-${node.id}" onclick="event.stopPropagation()">
-            ${canEdit 
-                ? `<textarea class="tree-note-textarea" placeholder="${placeholder}" onchange="saveTreeNote('${node.id}', this)">${existingNote}</textarea>`
-                : (existingNote ? `<div class="tree-note-readonly">${existingNote}</div>` : `<div class="tree-note-readonly" style="color:#bbb;font-style:italic;">No notes yet</div>`)
-            }
-        </div>`;
+        // Admin always sees textarea; others only see note if it has content
+        if (canEdit) {
+            noteRow = `<div class="tree-note-row open" id="tree-note-row-${node.id}" onclick="event.stopPropagation()">
+                <textarea class="tree-note-textarea" placeholder="${placeholder}" onchange="saveTreeNote('${node.id}', this)">${existingNote}</textarea>
+            </div>`;
+        } else if (existingNote) {
+            noteRow = `<div class="tree-note-row open" id="tree-note-row-${node.id}" onclick="event.stopPropagation()">
+                <div class="tree-note-readonly">${existingNote}</div>
+            </div>`;
+        }
     }
     
     let html = `
@@ -1800,7 +1802,6 @@ function renderTreeNode(node, expanded = true) {
                     ${(node.description && node.level !== 'group') ? `<div class="tree-description">${node.description}</div>` : ''}
                     ${(node.level !== 'group') ? focusHtml : ''}
                 </div>
-                ${noteBtn}
             </div>
             ${noteRow}`;
     
@@ -1824,14 +1825,15 @@ function countScopeItems(node) {
 
 function toggleTreeNode(header) {
     const toggle = header.querySelector('.tree-toggle');
-    const children = header.nextElementSibling;
-    
     if (toggle.classList.contains('no-children')) return;
     
+    // Find the .tree-children div (skip any note rows in between)
+    const parent = header.parentElement;
+    const children = parent.querySelector(':scope > .tree-children');
+    if (!children) return;
+    
     toggle.classList.toggle('expanded');
-    if (children) {
-        children.classList.toggle('expanded');
-    }
+    children.classList.toggle('expanded');
 }
 
 function expandAll() {
