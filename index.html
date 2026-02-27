@@ -417,6 +417,10 @@
         .tree-note-textarea { width: 100%; margin-top: 6px; padding: 8px 10px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 0.8rem; font-family: inherit; resize: vertical; min-height: 50px; transition: border-color 0.2s; background: #fefefe; }
         .tree-note-textarea:focus { outline: none; border-color: #7c4dff; background: #fff; }
         .tree-note-readonly { margin-top: 6px; padding: 8px 10px; font-size: 0.8rem; color: #4a5568; line-height: 1.5; white-space: pre-wrap; background: #f8f8fa; border-radius: 6px; border: 1px solid #e8e8e8; }
+
+        /* Highlight tree rows that have notes */
+        .tree-node.has-note > .tree-node-header { background: linear-gradient(135deg, #fef9e7, #fef3cd) !important; border-left-color: #f0c040 !important; }
+        .tree-node.has-note > .tree-node-header::after { content: ''; }
     </style>
 </head>
 <body>
@@ -1768,28 +1772,29 @@ function renderTreeNode(node, expanded = true) {
     {
         const noteKey = node.id;
         const existingNote = meetingNotes[noteKey] || '';
+        const hasNote = existingNote ? 'has-note' : '';
         const canEdit = typeof isAdmin === 'function' && isAdmin();
         const placeholders = {
-            competency: 'Add competency-level notes... (e.g., overall alignment decisions, scope boundaries)',
-            es: 'Add ES-level notes... (e.g., assessment alignment, coverage gaps)',
-            group: 'Add group-level notes... (e.g., grouping rationale, cross-references)',
-            scope: 'Add discussion notes... (e.g., stakeholder feedback, decisions)'
+            competency: 'Add competency-level notes...',
+            es: 'Add ES-level notes...',
+            group: 'Add group-level notes...',
+            scope: 'Add discussion notes...'
         };
         const placeholder = placeholders[node.level] || 'Add notes...';
-        // Admin always sees textarea; others only see note if it has content
-        if (canEdit) {
-            noteRow = `<div class="tree-note-row open" id="tree-note-row-${node.id}" onclick="event.stopPropagation()">
-                <textarea class="tree-note-textarea" placeholder="${placeholder}" onchange="saveTreeNote('${node.id}', this)">${existingNote}</textarea>
-            </div>`;
-        } else if (existingNote) {
-            noteRow = `<div class="tree-note-row open" id="tree-note-row-${node.id}" onclick="event.stopPropagation()">
-                <div class="tree-note-readonly">${existingNote}</div>
-            </div>`;
-        }
+        // Auto-open if note has content
+        const autoOpen = existingNote ? 'open' : '';
+        noteBtn = `<button class="tree-note-btn ${hasNote}" onclick="event.stopPropagation(); toggleTreeNote('${node.id}', this)" title="${existingNote ? 'View notes' : 'Add notes'}">📝</button>`;
+        noteRow = `<div class="tree-note-row ${autoOpen}" id="tree-note-row-${node.id}" onclick="event.stopPropagation()">
+            ${canEdit 
+                ? `<textarea class="tree-note-textarea" placeholder="${placeholder}" onchange="saveTreeNote('${node.id}', this)">${existingNote}</textarea>`
+                : (existingNote ? `<div class="tree-note-readonly">${existingNote}</div>` : `<div class="tree-note-readonly" style="color:#bbb;font-style:italic;">No notes yet</div>`)
+            }
+        </div>`;
     }
     
+    const nodeHasNote = meetingNotes[node.id] ? 'has-note' : '';
     let html = `
-        <div class="tree-node level-${node.level} ${statusClass}" data-id="${node.id}">
+        <div class="tree-node level-${node.level} ${statusClass} ${nodeHasNote}" data-id="${node.id}">
             <div class="tree-node-header" onclick="toggleTreeNode(this)">
                 <span class="tree-toggle ${hasChildren ? expandedClass : 'no-children'}">▶</span>
                 <div class="tree-content">
@@ -1802,6 +1807,7 @@ function renderTreeNode(node, expanded = true) {
                     ${(node.description && node.level !== 'group') ? `<div class="tree-description">${node.description}</div>` : ''}
                     ${(node.level !== 'group') ? focusHtml : ''}
                 </div>
+                ${noteBtn}
             </div>
             ${noteRow}`;
     
