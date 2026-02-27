@@ -1939,7 +1939,7 @@ if (typeof lucide !== 'undefined') lucide.createIcons();
 // Shared state via Google Apps Script (like case study review)
 const PLANNER_API = "https://script.google.com/macros/s/AKfycbze1GThpcYqrJaZVO6Uu_LFDOQPr5aySG407oug7MlOlS6kqflU7Nn-C7oUa_W-0nA/exec";
 const PLANNER_COLORS = ['#C25178','#3A8FBF','#5E9E5E','#9B6EC5','#D4853A','#4A8F8F','#C4564A','#7B8EC2'];
-let plannerState = { checkedID: {}, checkedAD: {}, notes: {} }; // keyed by scopeId_reviewer
+let plannerState = { checkedID: {}, checkedAD: {}, notes: {} }; // checkedID/AD keyed by scopeId (shared), notes keyed by scopeId_reviewer (personal)
 let plannerReviewers = [];
 let plannerRColors = {};
 let plannerSaveT = null;
@@ -1954,8 +1954,7 @@ function pKey(scopeId, reviewer) { return scopeId + '_' + reviewer; }
 
 function pUpdateReviewers() {
     const s = new Set();
-    Object.keys(plannerState.checkedID).forEach(k => { const p = k.indexOf('_'); if (p > -1) s.add(k.slice(p+1)); });
-    Object.keys(plannerState.checkedAD).forEach(k => { const p = k.indexOf('_'); if (p > -1) s.add(k.slice(p+1)); });
+    // Only notes are per-user, checks are shared
     Object.keys(plannerState.notes).forEach(k => { const p = k.indexOf('_'); if (p > -1) s.add(k.slice(p+1)); });
     if (plannerUser) s.add(plannerUser);
     plannerReviewers = [...s].sort((a,b) => a === plannerUser ? -1 : b === plannerUser ? 1 : a.localeCompare(b));
@@ -1991,11 +1990,15 @@ function pLoadData() {
         try {
             plannerState = { checkedID: {}, checkedAD: {}, notes: {} };
             (data || []).forEach(row => {
-                if (!row.scopeId || !row.reviewer) return;
-                const key = pKey(row.scopeId, row.reviewer);
-                if (row.checkedID === 'true' || row.checkedID === true) plannerState.checkedID[key] = true;
-                if (row.checkedAD === 'true' || row.checkedAD === true) plannerState.checkedAD[key] = true;
-                if (row.notes) plannerState.notes[key] = row.notes;
+                if (!row.scopeId) return;
+                // Checkboxes: stored with reviewer='__shared__', keyed by scopeId only
+                if (row.reviewer === '__shared__') {
+                    if (row.checkedID === 'true' || row.checkedID === true) plannerState.checkedID[row.scopeId] = true;
+                    if (row.checkedAD === 'true' || row.checkedAD === true) plannerState.checkedAD[row.scopeId] = true;
+                } else if (row.reviewer) {
+                    // Notes: keyed by scopeId_reviewer (personal)
+                    if (row.notes) plannerState.notes[pKey(row.scopeId, row.reviewer)] = row.notes;
+                }
             });
             pUpdateReviewers();
             pSetSync('Synced', 'saved');
@@ -2030,13 +2033,75 @@ function pSaveItem(scopeId, checkedID, checkedAD, notes) {
     if (!PLANNER_API) return;
     
     pSetSync('Saving...', 'saving');
-    const cbName = 'psave_cb_' + Date.now();
+    
+    // Save shared checkboxes (reviewer = __shared__)
+    const cbNameCheck = 'psave_cb_' + Date.now();
+    const checkParams = new URLSearchParams({
+        action: 'save',
+        scopeId: scopeId,
+        reviewer: '__shared__',
+        checkedID: checkedID ? 'true' : 'false',
+        checkedAD: checkedAD ? 'true' : 'false',
+        notes: '',
+        callback: cbNameCheck
+    });
+    
+    window[cbNameCheck] = function() {
+        delete window[cbNameCheck];
+        const el = document.getElementById(cbNameCheck);
+        if (el) el.remove();
+        
+        // Save per-user notes if there are any
+        if (notes) {
+            const cbNameNote = 'psave_note_' + Date.now();
+            const noteParams = new URLSearchParams({
+                action: 'save',
+                scopeId: scopeId,
+                reviewer: plannerUser,
+                checkedID: 'false',
+                checkedAD: 'false',
+                notes: notes,
+                callback: cbNameNote
+            });
+            window[cbNameNote] = function() {
+                pSetSync('Saved ✓', 'saved');
+                delete window[cbNameNote];
+                const el2 = document.getElementById(cbNameNote);
+                if (el2) el2.remove();
+            };
+            const s2 = document.createElement('script');
+            s2.id = cbNameNote;
+            s2.src = PLANNER_API + '?' + noteParams.toString();
+            s2.onerror = function() { pSetSync('Save failed', 'error'); delete window[cbNameNote]; s2.remove(); };
+            document.body.appendChild(s2);
+        } else {
+            pSetSync('Saved ✓', 'saved');
+        }
+    };
+    
+    const s = document.createElement('script');
+    s.id = cbNameCheck;
+    s.src = PLANNER_API + '?' + checkParams.toString();
+    s.onerror = function() {
+        pSetSync('Save failed', 'error');
+        delete window[cbNameCheck];
+        s.remove();
+    };
+    document.body.appendChild(s);
+}
+
+// Save only a note (no checkbox change)
+function pSaveNote(scopeId, notes) {
+    if (!plannerUser || !PLANNER_API) return;
+    
+    pSetSync('Saving...', 'saving');
+    const cbName = 'psave_note_' + Date.now();
     const params = new URLSearchParams({
         action: 'save',
         scopeId: scopeId,
         reviewer: plannerUser,
-        checkedID: checkedID ? 'true' : 'false',
-        checkedAD: checkedAD ? 'true' : 'false',
+        checkedID: 'false',
+        checkedAD: 'false',
         notes: notes || '',
         callback: cbName
     });
@@ -2051,11 +2116,7 @@ function pSaveItem(scopeId, checkedID, checkedAD, notes) {
     const s = document.createElement('script');
     s.id = cbName;
     s.src = PLANNER_API + '?' + params.toString();
-    s.onerror = function() {
-        pSetSync('Save failed', 'error');
-        delete window[cbName];
-        s.remove();
-    };
+    s.onerror = function() { pSetSync('Save failed', 'error'); delete window[cbName]; s.remove(); };
     document.body.appendChild(s);
 }
 
@@ -2176,19 +2237,17 @@ function renderPlanner(searchTerm = '') {
     let totalItems = 0;
     let checkedItems = 0;
     
-    // Helper to get current user's state for a scope item
-    const isCheckedID = (sid) => plannerState.checkedID[pKey(sid, plannerUser)];
-    const isCheckedAD = (sid) => plannerState.checkedAD[pKey(sid, plannerUser)];
+    // Helper to get state for a scope item (checks are shared, notes are per-user)
+    const isCheckedID = (sid) => plannerState.checkedID[sid];
+    const isCheckedAD = (sid) => plannerState.checkedAD[sid];
     const isBothChecked = (sid) => isCheckedID(sid) && isCheckedAD(sid);
     const getNote = (sid) => plannerState.notes[pKey(sid, plannerUser)] || '';
     const getOtherNotes = (sid) => {
         return plannerReviewers.filter(r => r !== plannerUser).map(r => ({
             name: r,
             color: pGetColor(r),
-            note: plannerState.notes[pKey(sid, r)] || '',
-            id: plannerState.checkedID[pKey(sid, r)],
-            ad: plannerState.checkedAD[pKey(sid, r)]
-        })).filter(x => x.note || x.id || x.ad);
+            note: plannerState.notes[pKey(sid, r)] || ''
+        })).filter(x => x.note);
     };
     
     let html = '';
@@ -2279,11 +2338,7 @@ function renderPlanner(searchTerm = '') {
                     let othersHtml = '';
                     if (others.length) {
                         othersHtml = '<div class="planner-others">' + others.map(o => {
-                            let parts = [];
-                            if (o.id) parts.push('ID ✓');
-                            if (o.ad) parts.push('AD ✓');
-                            if (o.note) parts.push(o.note);
-                            return `<div class="planner-other-note"><span class="p-av-tiny" style="background:${o.color}">${o.name[0].toUpperCase()}</span><span class="p-other-name">${o.name}:</span> ${parts.join(' · ')}</div>`;
+                            return `<div class="planner-other-note"><span class="p-av-tiny" style="background:${o.color}">${o.name[0].toUpperCase()}</span><span class="p-other-name">${o.name}:</span> ${o.note}</div>`;
                         }).join('') + '</div>';
                     }
                     
@@ -2334,28 +2389,28 @@ function togglePlannerEs(header) {
 }
 
 function togglePlannerCheck(scopeId, type, checkbox) {
-    const key = pKey(scopeId, plannerUser);
     const stateObj = type === 'ID' ? plannerState.checkedID : plannerState.checkedAD;
     
     if (checkbox.checked) {
-        stateObj[key] = true;
+        stateObj[scopeId] = true;
     } else {
-        delete stateObj[key];
+        delete stateObj[scopeId];
     }
     
     // Strikethrough text only when both are checked
     const row = checkbox.closest('.planner-scope-row');
     const textEl = row.querySelector('.planner-scope-text');
-    const bothChecked = plannerState.checkedID[key] && plannerState.checkedAD[key];
+    const bothChecked = plannerState.checkedID[scopeId] && plannerState.checkedAD[scopeId];
     textEl.classList.toggle('checked', bothChecked);
     
-    // Save to backend
-    pSaveItem(scopeId, !!plannerState.checkedID[key], !!plannerState.checkedAD[key], plannerState.notes[key] || '');
+    // Save to backend (shared checks)
+    const noteKey = pKey(scopeId, plannerUser);
+    pSaveItem(scopeId, !!plannerState.checkedID[scopeId], !!plannerState.checkedAD[scopeId], plannerState.notes[noteKey] || '');
     
     // Update progress without full re-render
     const allScope = nodes.filter(n => n.type === 'scope_item').length;
-    const allID = nodes.filter(n => n.type === 'scope_item' && plannerState.checkedID[pKey(n.id, plannerUser)]).length;
-    const allAD = nodes.filter(n => n.type === 'scope_item' && plannerState.checkedAD[pKey(n.id, plannerUser)]).length;
+    const allID = nodes.filter(n => n.type === 'scope_item' && plannerState.checkedID[n.id]).length;
+    const allAD = nodes.filter(n => n.type === 'scope_item' && plannerState.checkedAD[n.id]).length;
     const pctID = Math.round((allID / allScope) * 100);
     const pctAD = Math.round((allAD / allScope) * 100);
     document.getElementById('planner-progress-text').textContent = `ID: ${allID}/${allScope} · AD: ${allAD}/${allScope}`;
@@ -2384,10 +2439,10 @@ function savePlannerNote(scopeId, textarea) {
     const btn = row?.querySelector('.planner-scope-note-btn');
     if (btn) btn.classList.toggle('has-note', !!val);
     
-    // Debounced save
+    // Debounced save (notes only)
     clearTimeout(plannerSaveT);
     plannerSaveT = setTimeout(() => {
-        pSaveItem(scopeId, !!plannerState.checkedID[key], !!plannerState.checkedAD[key], val);
+        pSaveNote(scopeId, val);
     }, 800);
 }
 
@@ -2404,12 +2459,11 @@ document.getElementById('planner-check-all').addEventListener('click', function(
     if (!plannerUser) return;
     document.querySelectorAll('.planner-scope-row').forEach(row => {
         const scopeId = row.dataset.scopeId;
-        const key = pKey(scopeId, plannerUser);
         row.querySelectorAll('.planner-scope-check').forEach(cb => { cb.checked = true; });
-        plannerState.checkedID[key] = true;
-        plannerState.checkedAD[key] = true;
+        plannerState.checkedID[scopeId] = true;
+        plannerState.checkedAD[scopeId] = true;
         row.querySelector('.planner-scope-text').classList.add('checked');
-        pSaveItem(scopeId, true, true, plannerState.notes[key] || '');
+        pSaveItem(scopeId, true, true, '');
     });
     renderPlanner(document.getElementById('planner-search').value);
 });
@@ -2418,11 +2472,10 @@ document.getElementById('planner-check-all').addEventListener('click', function(
 document.getElementById('planner-uncheck-all').addEventListener('click', function() {
     if (!plannerUser) return;
     nodes.filter(n => n.type === 'scope_item').forEach(s => {
-        const key = pKey(s.id, plannerUser);
-        const hadData = plannerState.checkedID[key] || plannerState.checkedAD[key];
-        delete plannerState.checkedID[key];
-        delete plannerState.checkedAD[key];
-        if (hadData) pSaveItem(s.id, false, false, plannerState.notes[key] || '');
+        const hadData = plannerState.checkedID[s.id] || plannerState.checkedAD[s.id];
+        delete plannerState.checkedID[s.id];
+        delete plannerState.checkedAD[s.id];
+        if (hadData) pSaveItem(s.id, false, false, '');
     });
     renderPlanner(document.getElementById('planner-search').value);
 });
@@ -2432,8 +2485,8 @@ document.getElementById('planner-export-btn').addEventListener('click', function
     if (!plannerUser) return;
     let output = 'COURSE PLANNER EXPORT — ' + plannerUser + '\n' + '='.repeat(50) + '\n\n';
     const scopeItems = nodes.filter(n => n.type === 'scope_item');
-    const totalID = scopeItems.filter(s => plannerState.checkedID[pKey(s.id, plannerUser)]).length;
-    const totalAD = scopeItems.filter(s => plannerState.checkedAD[pKey(s.id, plannerUser)]).length;
+    const totalID = scopeItems.filter(s => plannerState.checkedID[s.id]).length;
+    const totalAD = scopeItems.filter(s => plannerState.checkedAD[s.id]).length;
     output += `Progress: ID ${totalID}/${scopeItems.length} · AD ${totalAD}/${scopeItems.length}\n\n`;
     
     const comps = nodes.filter(n => n.type === 'competency');
@@ -2445,10 +2498,10 @@ document.getElementById('planner-export-btn').addEventListener('click', function
             output += `\n  ${es.name}: ${es.description || ''}\n`;
             const scopeForEs = scopeItems.filter(s => s.es === es.id);
             scopeForEs.forEach(s => {
-                const key = pKey(s.id, plannerUser);
-                const checkID = plannerState.checkedID[key] ? '☑' : '☐';
-                const checkAD = plannerState.checkedAD[key] ? '☑' : '☐';
-                const note = plannerState.notes[key] ? ` → NOTE: ${plannerState.notes[key]}` : '';
+                const checkID = plannerState.checkedID[s.id] ? '☑' : '☐';
+                const checkAD = plannerState.checkedAD[s.id] ? '☑' : '☐';
+                const noteKey = pKey(s.id, plannerUser);
+                const note = plannerState.notes[noteKey] ? ` → NOTE: ${plannerState.notes[noteKey]}` : '';
                 output += `    ID:${checkID} AD:${checkAD} ${s.name}${note}\n`;
             });
         });
