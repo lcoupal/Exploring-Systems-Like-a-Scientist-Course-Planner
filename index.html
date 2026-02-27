@@ -1,0 +1,2837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evidence Statements Knowledge Graph</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: linear-gradient(135deg, #001a33 0%, #003057 50%, #002244 100%); min-height: 100vh; }
+        .tabs { display: flex; background: rgba(0,0,0,0.4); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .tab { padding: 12px 24px; color: rgba(255,255,255,0.6); cursor: pointer; border: none; background: none; font-size: 0.9rem; font-weight: 500; transition: all 0.2s; }
+        .tab:hover { color: rgba(255,255,255,0.9); background: rgba(255,255,255,0.05); }
+        .tab.active { color: #6cb4e4; border-bottom: 2px solid #4a90c2; background: rgba(74,144,194,0.15); }
+        .tab-content { display: none; height: calc(100vh - 47px); }
+        .tab-content.active { display: flex; flex-direction: column; }
+        
+        .help-view { padding: 30px 50px; overflow-y: auto; color: #fff; max-width: 1200px; margin: 0 auto; }
+        .help-view h1 { font-size: 2rem; margin-bottom: 8px; background: linear-gradient(90deg, #4a90c2, #6cb4e4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .help-view .subtitle { color: rgba(255,255,255,0.5); margin-bottom: 30px; font-size: 1rem; }
+        .help-view h2 { font-size: 1.3rem; color: #6cb4e4; margin: 30px 0 15px 0; padding-bottom: 8px; border-bottom: 1px solid rgba(0,212,255,0.3); }
+        .help-view p { color: rgba(255,255,255,0.8); line-height: 1.7; margin-bottom: 12px; }
+        .help-view ul { margin: 10px 0 15px 25px; color: rgba(255,255,255,0.8); line-height: 1.8; }
+        .definition-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin: 20px 0; }
+        .definition-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; padding: 15px; }
+        .definition-card .term { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .definition-card .dot { width: 12px; height: 12px; border-radius: 50%; }
+        .definition-card .term-name { font-size: 1rem; font-weight: 600; color: #fff; }
+        .definition-card .definition { color: rgba(255,255,255,0.7); font-size: 0.85rem; line-height: 1.5; }
+        .color-legend { display: flex; gap: 12px; flex-wrap: wrap; margin: 15px 0; }
+        .color-item { display: flex; align-items: center; gap: 6px; padding: 6px 10px; background: rgba(255,255,255,0.03); border-radius: 6px; }
+        .color-item .swatch { width: 16px; height: 16px; border-radius: 3px; }
+        .color-item span { color: rgba(255,255,255,0.8); font-size: 0.8rem; }
+
+        /* Multi-select dropdown */
+        .multi-select { position: relative; min-width: 140px; }
+        .multi-select-btn { padding: 5px 8px; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; background: rgba(255,255,255,0.06); color: #fff; font-size: 0.7rem; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 6px; width: 100%; user-select: none; }
+        .multi-select-btn::after { content: '▾'; font-size: 0.6rem; opacity: 0.6; }
+        .multi-select-btn.active { border-color: #6cb4e4; }
+        .multi-select-dropdown { display: none; position: absolute; top: 100%; left: 0; min-width: 220px; max-height: 280px; overflow-y: auto; background: #1a1a2e; border: 1px solid rgba(255,255,255,0.2); border-radius: 6px; z-index: 1000; margin-top: 2px; box-shadow: 0 8px 24px rgba(0,0,0,0.5); }
+        .multi-select-dropdown.open { display: block; }
+        .multi-select-option { display: flex; align-items: center; gap: 8px; padding: 6px 10px; cursor: pointer; font-size: 0.7rem; color: rgba(255,255,255,0.85); transition: background 0.15s; }
+        .multi-select-option:hover { background: rgba(255,255,255,0.08); }
+        .multi-select-option input[type="checkbox"] { accent-color: #6cb4e4; margin: 0; cursor: pointer; }
+        .multi-select-option.select-all { border-bottom: 1px solid rgba(255,255,255,0.1); font-weight: 600; color: #6cb4e4; }
+        .multi-select-option.unavailable { opacity: 0.35; }
+        .multi-select-option.unavailable::after { content: ''; font-size: 0.6rem; margin-left: auto; opacity: 0.6; }
+        .table-view .multi-select-option.unavailable { opacity: 0.35; }
+        .multi-select-count { background: #4a90c2; color: #fff; font-size: 0.55rem; padding: 1px 5px; border-radius: 8px; font-weight: 600; }
+
+        /* Table view multi-select overrides */
+        .table-view .multi-select-btn { padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #333; font-size: 0.9rem; min-width: 160px; }
+        .table-view .multi-select-btn:focus, .table-view .multi-select-btn.active { border-color: #4a90c2; box-shadow: 0 0 0 3px rgba(74,144,194,0.15); }
+        .table-view .multi-select-dropdown { background: #fff; border: 1px solid #ddd; box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+        .table-view .multi-select-option { color: #333; font-size: 0.85rem; padding: 8px 12px; }
+        .table-view .multi-select-option:hover { background: #f5f9fc; }
+        .table-view .multi-select-option.select-all { border-bottom: 1px solid #eee; color: #4a90c2; }
+        .table-view .multi-select-count { background: #4a90c2; }
+
+        .graph-filters-bar { background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.08); padding: 8px 14px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+        .graph-filters-bar .filter-group { display: flex; flex-direction: column; gap: 2px; }
+        .graph-filters-bar label { font-size: 0.55rem; color: rgba(255,255,255,0.5); text-transform: uppercase; }
+        .graph-filters-bar select { padding: 5px 8px; border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; background: rgba(255,255,255,0.06); color: #fff; font-size: 0.7rem; min-width: 140px; cursor: pointer; }
+        .graph-filters-bar select:focus { outline: none; border-color: #6cb4e4; }
+        .graph-filters-bar select option { background: #1a1a2e; }
+        .graph-filters-bar .clear-btn { padding: 5px 12px; background: rgba(255,100,100,0.15); border: 1px solid rgba(255,100,100,0.3); border-radius: 4px; color: #ff6b6b; font-size: 0.65rem; cursor: pointer; margin-left: auto; }
+        .toggle-status-btn { padding: 5px 12px; background: rgba(107,203,119,0.2); border: 1px solid rgba(107,203,119,0.4); border-radius: 4px; color: #6bcb77; font-size: 0.65rem; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .toggle-status-btn:hover { background: rgba(107,203,119,0.3); }
+        .toggle-status-btn.off { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.5); }
+        .table-view .toggle-status-btn { background: #d4edda; border-color: #6bcb77; color: #155724; }
+        .table-view .toggle-status-btn:hover { background: #c3e6cb; }
+        .table-view .toggle-status-btn.off { background: #f0f0f0; border-color: #ccc; color: #888; }
+        .toggle-card-btn { padding: 5px 12px; background: rgba(74,144,194,0.2); border: 1px solid rgba(74,144,194,0.4); border-radius: 4px; color: #6cb4e4; font-size: 0.65rem; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .toggle-card-btn:hover { background: rgba(74,144,194,0.3); }
+        .toggle-card-btn.active { background: rgba(74,144,194,0.4); border-color: #6cb4e4; }
+
+        /* Card View */
+        .card-view-container { display: none; width: 100%; height: 100%; overflow-y: auto; padding: 20px 24px; background: linear-gradient(135deg, #f0f4f8 0%, #e8edf3 100%); }
+        .card-view-container.active { display: block; }
+        .card-comp-section { margin-bottom: 24px; }
+        .card-comp-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: linear-gradient(135deg, #ff6b6b, #ee5a5a); color: #fff; border-radius: 10px 10px 0 0; font-weight: 700; font-size: 1rem; }
+        .card-comp-header .comp-badge { background: rgba(255,255,255,0.25); padding: 2px 10px; border-radius: 12px; font-size: 0.7rem; }
+        .card-comp-body { background: #fff; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px; padding: 16px; }
+        .card-es-section { margin-bottom: 16px; border: 1px solid #e0e8f0; border-radius: 8px; overflow: hidden; }
+        .card-es-header { display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: linear-gradient(135deg, #e0f5f0, #d4efea); color: #00796b; font-weight: 600; font-size: 0.9rem; cursor: pointer; user-select: none; }
+        .card-es-header:hover { background: linear-gradient(135deg, #d4efea, #c8e9e2); }
+        .card-es-header .es-toggle { transition: transform 0.2s; font-size: 0.7rem; }
+        .card-es-header .es-toggle.expanded { transform: rotate(90deg); }
+        .card-es-header .es-badge { background: rgba(0,121,107,0.15); padding: 2px 8px; border-radius: 10px; font-size: 0.65rem; margin-left: auto; }
+        .card-es-desc { padding: 8px 14px; font-size: 0.8rem; color: #555; background: #f8fafa; border-bottom: 1px solid #e0e8f0; line-height: 1.4; }
+        .card-es-body { padding: 12px; display: none; }
+        .card-es-body.expanded { display: block; }
+        .card-group-section { margin-bottom: 12px; }
+        .card-group-header { padding: 8px 12px; background: #f3f0fa; color: #6c5ce7; font-weight: 600; font-size: 0.85rem; border-radius: 6px 6px 0 0; border-left: 4px solid #a78bfa; }
+        .card-scope-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 8px; padding: 10px 12px; background: #fafafa; border: 1px solid #eee; border-top: none; border-radius: 0 0 6px 6px; }
+        .card-scope-item { padding: 10px 12px; border-radius: 6px; font-size: 0.82rem; color: #333; line-height: 1.4; border-left: 4px solid; transition: transform 0.15s, box-shadow 0.15s; background: #fff; }
+        .card-scope-item:hover { transform: translateY(-2px); box-shadow: 0 3px 8px rgba(0,0,0,0.1); }
+        .card-scope-item.status-green { border-color: #00cc00; background: linear-gradient(135deg, #f0fff0, #fff); }
+        .card-scope-item.status-magenta { border-color: #cc00cc; background: linear-gradient(135deg, #fff0ff, #fff); }
+        .card-scope-item.status-cyan { border-color: #00cccc; background: linear-gradient(135deg, #f0ffff, #fff); }
+        .card-scope-item.status-neutral { border-color: #6bcb77; background: linear-gradient(135deg, #f0fff4, #fff); }
+        .card-scope-item .scope-status { display: inline-block; font-size: 0.65rem; font-weight: 600; padding: 1px 6px; border-radius: 8px; margin-left: 6px; }
+        .card-scope-item .scope-status.green { background: #d4edda; color: #155724; }
+        .card-scope-item .scope-status.magenta { background: #f3e5f5; color: #7b1fa2; }
+        .card-scope-item .scope-status.cyan { background: #e0f7fa; color: #00695c; }
+        .card-scope-count { font-size: 0.7rem; color: #888; margin-top: 4px; }
+        .graph-filters-bar .filter-count { font-size: 0.7rem; color: rgba(255,255,255,0.5); padding: 5px 10px; background: rgba(74,144,194,0.15); border-radius: 4px; }
+        .graph-filters-bar .filter-count strong { color: #6cb4e4; }
+        
+        .container { display: flex; width: 100%; flex: 1; overflow: hidden; }
+        .sidebar { width: 320px; min-width: 320px; flex-shrink: 0; background: rgba(255,255,255,0.03); border-right: 1px solid rgba(255,255,255,0.08); padding: 12px; overflow-y: auto; color: #fff; display: flex; flex-direction: column; }
+        .sidebar h1 { font-size: 1rem; margin-bottom: 4px; background: linear-gradient(90deg, #4a90c2, #6cb4e4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .sidebar > p { font-size: 0.65rem; color: rgba(255,255,255,0.5); margin-bottom: 10px; }
+        
+        .info-box { background: rgba(30, 40, 55, 0.95); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; margin-bottom: 12px; overflow: hidden; overflow-y: auto; flex-shrink: 0; }
+        .info-box-header { background: rgba(0,0,0,0.3); padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .info-box-id { font-size: 1.1rem; font-weight: 700; color: #fff; margin-bottom: 4px; }
+        .info-box-desc { font-size: 0.75rem; color: rgba(255,255,255,0.8); line-height: 1.4; }
+        .info-box-type-badge { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; margin-top: 6px; }
+        .info-box-content { padding: 10px 12px; }
+        .info-box-row { display: flex; margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 8px; }
+        .info-box-row:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+        .info-box-label { width: 80px; flex-shrink: 0; font-size: 0.65rem; color: rgba(255,255,255,0.5); text-transform: uppercase; font-weight: 600; padding-top: 2px; }
+        .info-box-value { flex: 1; font-size: 0.75rem; color: rgba(255,255,255,0.9); line-height: 1.4; }
+        .info-box-value .tag { display: inline-block; padding: 4px 6px; margin: 2px; font-size: 0.65rem; background: rgba(255,255,255,0.1); border-radius: 3px; border-left: 3px solid; line-height: 1.4; }
+        .info-box-placeholder { padding: 25px 12px; text-align: center; color: rgba(255,255,255,0.4); font-size: 0.8rem; }
+        .info-box-placeholder .icon { font-size: 1.8rem; margin-bottom: 8px; opacity: 0.5; }
+        
+        .legend { margin-bottom: 8px; flex-shrink: 0; }
+        .legend h3 { font-size: 0.6rem; margin-bottom: 4px; color: rgba(255,255,255,0.7); text-transform: uppercase; }
+        .legend-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+        .legend-item { display: flex; align-items: center; gap: 5px; padding: 3px 5px; border-radius: 3px; cursor: pointer; font-size: 0.6rem; }
+        .legend-item:hover { background: rgba(255,255,255,0.08); }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .legend-count { color: rgba(255,255,255,0.4); margin-left: auto; font-size: 0.55rem; }
+        
+        .status-legend { display: flex; gap: 5px; margin: 8px 0; flex-wrap: wrap; }
+        .status-badge { padding: 3px 6px; font-size: 0.55rem; border-radius: 3px; font-weight: 600; }
+        .status-green { background: rgba(0,255,0,0.2); color: #00ff00; }
+        .status-magenta { background: rgba(255,0,255,0.2); color: #ff00ff; }
+        .status-cyan { background: rgba(0,255,255,0.2); color: #00ffff; }
+        
+        .graph-container { flex: 1; position: relative; }
+        svg { width: 100%; height: 100%; }
+        .node { cursor: pointer; transition: opacity 0.2s; }
+        .node.filtered-out { opacity: 0.03; pointer-events: none; }
+        .node circle { stroke: rgba(255,255,255,0.2); stroke-width: 1px; }
+        .node:hover circle { stroke: #fff; stroke-width: 2px; }
+        .node.selected circle { stroke: #fff; stroke-width: 2.5px; filter: drop-shadow(0 0 6px rgba(255,255,255,0.4)); }
+        .node text { font-size: 6px; fill: rgba(255,255,255,0.85); pointer-events: none; text-shadow: 0 1px 2px rgba(0,0,0,0.9); }
+        .link { stroke: rgba(100,160,220,0.4); stroke-width: 1.5px; }
+        .link.filtered-out { opacity: 0.01; }
+        .link.highlighted { stroke: rgba(74,144,194,0.9); stroke-width: 3px; }
+        .dimmed { opacity: 0.03; }
+        
+        .controls { position: absolute; bottom: 10px; right: 10px; display: flex; gap: 4px; }
+        .control-btn { width: 30px; height: 30px; border: none; border-radius: 4px; background: rgba(255,255,255,0.1); color: #fff; cursor: pointer; font-size: 16px; }
+        .control-btn:hover { background: rgba(255,255,255,0.2); }
+        .tooltip { position: absolute; background: rgba(0,0,0,0.95); color: #fff; padding: 8px 10px; border-radius: 4px; font-size: 11px; pointer-events: none; opacity: 0; max-width: 320px; z-index: 1000; border: 1px solid rgba(255,255,255,0.1); }
+        .tooltip.active { opacity: 1; }
+        
+        .table-view { width: 100%; padding: 20px; overflow-y: auto; color: #333; flex: 1; background: #f8f9fa; }
+        .table-header h2 { font-size: 1.4rem; margin-bottom: 15px; color: #003057; font-weight: 600; }
+        .filters-container { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 15px; background: #fff; padding: 15px 20px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .filter-group { display: flex; flex-direction: column; gap: 4px; }
+        .filter-group label { font-size: 0.7rem; color: #666; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+        .filter-input, .filter-select { padding: 10px 14px; border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #333; font-size: 0.9rem; min-width: 160px; transition: all 0.2s; }
+        .filter-input:focus, .filter-select:focus { outline: none; border-color: #4a90c2; box-shadow: 0 0 0 3px rgba(74,144,194,0.15); }
+        .clear-filters-btn { padding: 10px 18px; background: #ff6b6b; border: none; border-radius: 8px; color: #fff; font-size: 0.85rem; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+        .clear-filters-btn:hover { background: #ee5a5a; transform: translateY(-1px); }
+        .expand-all-btn, .collapse-all-btn { padding: 10px 18px; background: #4a90c2; border: none; border-radius: 8px; color: #fff; font-size: 0.85rem; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+        .expand-all-btn:hover, .collapse-all-btn:hover { background: #3a7ab0; transform: translateY(-1px); }
+        .collapse-all-btn { background: #6c757d; }
+        .collapse-all-btn:hover { background: #5a6268; }
+        
+        .stats-bar { display: flex; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; background: #e3f2fd; padding: 12px 18px; border-radius: 8px; color: #1565c0; font-weight: 500; align-items: center; }
+        .stat-item { display: flex; align-items: center; gap: 6px; }
+        .stat-item .count { font-weight: 700; font-size: 1.1rem; }
+        .stat-item .label { font-size: 0.8rem; color: #1976d2; }
+        
+        /* Tree Container */
+        .tree-container { background: #fff; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); padding: 20px; max-height: calc(100vh - 280px); overflow-y: auto; }
+        
+        /* Tree Node Styles */
+        .tree-node { margin: 0; }
+        .tree-node-header { display: flex; align-items: flex-start; padding: 12px 15px; border-radius: 8px; cursor: pointer; transition: all 0.2s; margin-bottom: 4px; }
+        .tree-node-header:hover { background: #f5f9fc; }
+        
+        .tree-toggle { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; margin-right: 10px; font-size: 12px; color: #666; transition: transform 0.2s; flex-shrink: 0; }
+        .tree-toggle.expanded { transform: rotate(90deg); }
+        .tree-toggle.no-children { visibility: hidden; }
+        
+        .tree-content { flex: 1; }
+        .tree-title { font-weight: 600; color: #333; margin-bottom: 4px; display: flex; align-items: center; gap: 10px; }
+        .tree-description { font-size: 0.85rem; color: #666; line-height: 1.4; }
+        
+        .tree-children { margin-left: 34px; border-left: 2px solid #e0e0e0; padding-left: 0; display: none; }
+        .tree-children.expanded { display: block; }
+        
+        /* Competency Level */
+        .tree-node.level-competency > .tree-node-header { background: linear-gradient(135deg, #ff6b6b15, #ff6b6b08); border-left: 4px solid #ff6b6b; }
+        .tree-node.level-competency > .tree-node-header .tree-title { font-size: 1.1rem; color: #c0392b; }
+        .tree-node.level-competency > .tree-node-header .type-badge { background: #ff6b6b; color: #fff; }
+        
+        /* ES Level */
+        .tree-node.level-es > .tree-node-header { background: linear-gradient(135deg, #4ecdc415, #4ecdc408); border-left: 4px solid #4ecdc4; }
+        .tree-node.level-es > .tree-node-header .tree-title { font-size: 1rem; color: #00a896; }
+        .tree-node.level-es > .tree-node-header .type-badge { background: #4ecdc4; color: #fff; }
+        
+        /* Group Level */
+        .tree-node.level-group > .tree-node-header { background: linear-gradient(135deg, #a78bfa15, #a78bfa08); border-left: 4px solid #a78bfa; }
+        .tree-node.level-group > .tree-node-header .tree-title { font-size: 0.95rem; color: #6c5ce7; }
+        .tree-node.level-group > .tree-node-header .type-badge { background: #a78bfa; color: #fff; }
+        .tree-node.level-group .tree-focus { font-size: 0.8rem; color: #8b7fc7; font-style: italic; margin-top: 4px; }
+        
+        /* Scope Item Level */
+        .tree-node.level-scope > .tree-node-header { padding: 8px 15px; border-left: none; margin-left: 10px; }
+        .tree-node.level-scope > .tree-node-header:hover { background: #f0f7f0; }
+        .tree-node.level-scope .tree-title { font-size: 0.9rem; font-weight: 500; }
+        
+        /* Status Colors for Scope Items */
+        .tree-node.level-scope.status-green > .tree-node-header { border-left: 4px solid #00cc00; background: linear-gradient(135deg, #00ff0010, #00ff0005); }
+        .tree-node.level-scope.status-green .tree-title { color: #1e7e34; }
+        .tree-node.level-scope.status-magenta > .tree-node-header { border-left: 4px solid #cc00cc; background: linear-gradient(135deg, #ff00ff10, #ff00ff05); }
+        .tree-node.level-scope.status-magenta .tree-title { color: #8e44ad; }
+        .tree-node.level-scope.status-cyan > .tree-node-header { border-left: 4px solid #00cccc; background: linear-gradient(135deg, #00ffff10, #00ffff05); }
+        .tree-node.level-scope.status-cyan .tree-title { color: #00838f; }
+        
+        .type-badge { padding: 3px 10px; border-radius: 12px; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .status-badge { padding: 3px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 600; margin-left: auto; }
+        .status-badge.green { background: #d4edda; color: #155724; }
+        .status-badge.magenta { background: #f3e5f5; color: #7b1fa2; }
+        .status-badge.cyan { background: #e0f7fa; color: #00695c; }
+        
+        /* Count badges */
+        .count-badge { background: #e0e0e0; color: #666; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 600; margin-left: 8px; }
+
+        /* ===== COURSE PLANNER TAB ===== */
+        .planner-view { display: flex; flex-direction: column; height: 100%; overflow: hidden; position: relative; }
+        .planner-toolbar { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 12px 20px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; flex-shrink: 0; }
+        .planner-search { flex: 1; min-width: 200px; padding: 10px 14px 10px 36px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.9rem; transition: all 0.2s; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%23999' viewBox='0 0 16 16'%3E%3Cpath d='M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z'/%3E%3C/svg%3E") 12px center no-repeat; }
+        .planner-search:focus { outline: none; border-color: #4a90c2; box-shadow: 0 0 0 3px rgba(74,144,194,0.15); }
+        .planner-progress-bar { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: #f0f7ff; border-radius: 8px; font-size: 0.85rem; color: #1565c0; font-weight: 500; }
+        .planner-progress-fill { width: 120px; height: 8px; background: #e0e0e0; border-radius: 4px; overflow: hidden; }
+        .planner-progress-fill-inner { height: 100%; background: linear-gradient(90deg, #4caf50, #66bb6a); border-radius: 4px; transition: width 0.3s; }
+        .planner-btn { padding: 8px 16px; border: 1px solid #ddd; border-radius: 8px; background: #fff; color: #333; font-size: 0.8rem; cursor: pointer; font-weight: 500; transition: all 0.2s; }
+        .planner-btn:hover { background: #f5f5f5; border-color: #bbb; }
+        .planner-btn.active { background: #4a90c2; color: #fff; border-color: #4a90c2; }
+        .planner-btn.compare-btn { background: #7c4dff20; color: #7c4dff; border-color: #7c4dff60; }
+        .planner-btn.compare-btn:hover { background: #7c4dff30; }
+        .planner-btn.compare-btn.active { background: #7c4dff; color: #fff; }
+
+        .planner-body { display: flex; flex: 1; overflow: hidden; }
+        .planner-main { flex: 1; overflow-y: auto; padding: 16px 20px; background: #f8f9fa; }
+        .planner-compare-panel { width: 0; overflow: hidden; transition: width 0.3s; border-left: 1px solid #e0e0e0; background: #fff; display: flex; flex-direction: column; }
+        .planner-compare-panel.open { width: 420px; }
+        .planner-compare-header { padding: 12px 16px; background: #7c4dff; color: #fff; font-weight: 600; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+        .planner-compare-close { background: none; border: none; color: #fff; font-size: 1.2rem; cursor: pointer; opacity: 0.8; }
+        .planner-compare-close:hover { opacity: 1; }
+        .planner-compare-body { flex: 1; overflow-y: auto; padding: 12px; }
+        .planner-compare-select { padding: 12px; border-bottom: 1px solid #eee; }
+        .planner-compare-select label { font-size: 0.75rem; color: #666; text-transform: uppercase; font-weight: 600; display: block; margin-bottom: 4px; }
+        .planner-compare-select select { width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 0.85rem; }
+        .compare-results { padding: 12px; }
+        .compare-section { margin-bottom: 16px; }
+        .compare-section-title { font-size: 0.8rem; font-weight: 600; color: #7c4dff; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #eee; }
+        .compare-item { padding: 6px 10px; font-size: 0.8rem; border-radius: 4px; margin-bottom: 4px; }
+        .compare-item.shared { background: #e8f5e9; color: #2e7d32; }
+        .compare-item.only-a { background: #fff3e0; color: #e65100; }
+        .compare-item.only-b { background: #e3f2fd; color: #1565c0; }
+        .compare-legend { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+        .compare-legend-item { display: flex; align-items: center; gap: 4px; font-size: 0.7rem; }
+        .compare-legend-dot { width: 10px; height: 10px; border-radius: 2px; }
+
+        /* Planner scope items */
+        .planner-comp-section { margin-bottom: 20px; }
+        .planner-comp-header { padding: 10px 14px; background: linear-gradient(135deg, #ff6b6b, #ee5a5a); color: #fff; border-radius: 8px 8px 0 0; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 8px; }
+        .planner-comp-progress { margin-left: auto; font-size: 0.75rem; font-weight: 500; background: rgba(255,255,255,0.25); padding: 2px 10px; border-radius: 10px; }
+        .planner-comp-body { background: #fff; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 8px 8px; }
+        .planner-es-section { border-bottom: 1px solid #f0f0f0; }
+        .planner-es-section:last-child { border-bottom: none; }
+        .planner-es-header { padding: 8px 14px; background: #f8fafa; color: #00796b; font-weight: 600; font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; gap: 6px; user-select: none; }
+        .planner-es-header:hover { background: #f0f5f5; }
+        .planner-es-toggle { font-size: 0.65rem; transition: transform 0.2s; }
+        .planner-es-toggle.expanded { transform: rotate(90deg); }
+        .planner-es-progress { margin-left: auto; font-size: 0.7rem; color: #999; }
+        .planner-es-body { display: none; padding: 0; }
+        .planner-es-body.expanded { display: block; }
+        .planner-group-label { padding: 6px 14px 4px; font-size: 0.75rem; color: #6c5ce7; font-weight: 600; background: #faf8ff; border-top: 1px solid #f0f0f0; }
+
+        .planner-scope-row { display: flex; align-items: flex-start; padding: 8px 14px; border-top: 1px solid #f5f5f5; transition: background 0.15s; gap: 8px; }
+        .planner-scope-row:hover { background: #fafafa; }
+        .planner-scope-row.search-highlight { background: #fff9c4; }
+        .planner-scope-row.search-highlight:hover { background: #fff59d; }
+        .planner-scope-check { margin-top: 2px; accent-color: #4caf50; cursor: pointer; flex-shrink: 0; width: 16px; height: 16px; }
+        .planner-check-label { display: inline-flex; align-items: center; gap: 3px; cursor: pointer; flex-shrink: 0; }
+        .planner-check-label .check-tag { font-size: 0.6rem; font-weight: 700; color: #888; text-transform: uppercase; line-height: 1; }
+        .id-label .check-tag { color: #2e7d32; }
+        .id-label input { accent-color: #4caf50; }
+        .ad-label .check-tag { color: #1565c0; }
+        .ad-label input { accent-color: #1976d2; }
+        .planner-scope-text { flex: 1; font-size: 0.82rem; color: #333; line-height: 1.4; }
+        .planner-scope-text.checked { color: #999; text-decoration: line-through; }
+        .planner-scope-status { font-size: 0.6rem; font-weight: 600; padding: 1px 6px; border-radius: 8px; flex-shrink: 0; margin-top: 2px; }
+        .planner-scope-status.green { background: #d4edda; color: #155724; }
+        .planner-scope-status.magenta { background: #f3e5f5; color: #7b1fa2; }
+        .planner-scope-status.cyan { background: #e0f7fa; color: #00695c; }
+        .planner-scope-note-btn { background: none; border: none; cursor: pointer; font-size: 0.85rem; opacity: 0.4; transition: opacity 0.2s; flex-shrink: 0; padding: 0 2px; }
+        .planner-scope-note-btn:hover { opacity: 1; }
+        .planner-scope-note-btn.has-note { opacity: 0.8; }
+        .planner-scope-note { width: 100%; margin-top: 6px; padding: 8px 10px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 0.8rem; font-family: inherit; resize: vertical; min-height: 50px; transition: border-color 0.2s; background: #fefefe; }
+        .planner-scope-note:focus { outline: none; border-color: #4a90c2; background: #fff; }
+        .planner-scope-note-row { padding: 0 14px 8px 38px; display: none; }
+        .planner-scope-note-row.open { display: block; }
+        .search-match-count { font-size: 0.8rem; color: #4a90c2; font-weight: 600; }
+        .no-results { text-align: center; padding: 40px; color: #999; font-size: 0.95rem; }
+        .planner-sync { font-size: 0.7rem; margin-left: 4px; }
+        .planner-sync.saving { color: #4a90c2; }
+        .planner-sync.saved { color: #6B8E6B; }
+        .planner-sync.error { color: #C25178; }
+        .returning-btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: 20px; border: 1.5px solid #E2E8F0; background: #fff; font-size: 14px; font-weight: 500; cursor: pointer; transition: all .15s; color: #1B2A4A; font-family: inherit; }
+        .returning-btn:hover { border-color: #4a90c2; background: #F0F7F7; }
+        .p-av, .p-av-tiny { display: inline-flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; border-radius: 50%; }
+        .p-av { width: 24px; height: 24px; font-size: 11px; }
+        .p-av-tiny { width: 18px; height: 18px; font-size: 9px; flex-shrink: 0; }
+        .planner-others { margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; display: flex; flex-direction: column; gap: 4px; }
+        .planner-other-note { font-size: 0.75rem; color: #666; display: flex; align-items: flex-start; gap: 6px; padding: 4px 8px; background: #f8f9fa; border-radius: 4px; line-height: 1.4; }
+        .p-other-name { font-weight: 600; color: #555; white-space: nowrap; }
+
+        /* Admin status controls */
+        .planner-admin-status { display: inline-flex; align-items: center; gap: 4px; margin-left: 4px; flex-shrink: 0; }
+        .planner-admin-status select { padding: 2px 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.65rem; font-family: inherit; cursor: pointer; background: #fff; }
+        .planner-admin-status select:focus { outline: none; border-color: #7c4dff; }
+        .admin-badge { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 12px; font-size: 0.65rem; font-weight: 600; background: #7c4dff20; color: #7c4dff; margin-left: 8px; }
+
+        /* ===== COMPARE TAB ===== */
+        .compare-view { display: flex; flex-direction: column; height: 100%; overflow: hidden; background: #f8f9fa; }
+        .compare-toolbar { background: #fff; border-bottom: 1px solid #e0e0e0; padding: 14px 20px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; flex-shrink: 0; }
+        .compare-toolbar label { font-size: 0.75rem; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.03em; }
+        .compare-toolbar select { padding: 8px 12px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 0.85rem; font-family: inherit; min-width: 200px; }
+        .compare-toolbar select:focus { outline: none; border-color: #7c4dff; box-shadow: 0 0 0 3px rgba(124,77,255,0.1); }
+        .compare-vs { font-size: 1.1rem; font-weight: 700; color: #bbb; }
+        .compare-body { flex: 1; overflow-y: auto; padding: 20px; }
+        .compare-columns { display: grid; grid-template-columns: 1fr 60px 1fr; gap: 0; max-width: 1200px; margin: 0 auto; width: 100%; }
+        .compare-col { display: flex; flex-direction: column; gap: 6px; }
+        .compare-col-header { padding: 10px 14px; border-radius: 8px; font-weight: 700; font-size: 0.9rem; margin-bottom: 8px; text-align: center; }
+        .compare-col-header.side-a { background: #fff3e0; color: #e65100; border: 2px solid #ffcc80; }
+        .compare-col-header.side-b { background: #e3f2fd; color: #1565c0; border: 2px solid #90caf9; }
+        .compare-middle { display: flex; flex-direction: column; align-items: center; padding-top: 60px; }
+        .compare-stat { text-align: center; padding: 8px; font-size: 0.7rem; color: #999; }
+        .compare-stat .num { font-size: 1.4rem; font-weight: 700; display: block; }
+        .compare-stat.shared .num { color: #4caf50; }
+        .compare-stat.only .num { color: #ff9800; }
+        .compare-item-row { padding: 8px 12px; border-radius: 6px; font-size: 0.82rem; line-height: 1.4; margin-bottom: 2px; transition: background 0.15s; }
+        .compare-item-row.shared { background: #e8f5e9; color: #2e7d32; }
+        .compare-item-row.unique { background: #fff; border: 1px solid #eee; color: #333; }
+        .compare-item-row.absent { background: #f5f5f5; color: #ccc; font-style: italic; font-size: 0.75rem; }
+        .compare-group-label { font-size: 0.7rem; font-weight: 600; color: #7c4dff; padding: 6px 12px 2px; text-transform: uppercase; letter-spacing: 0.03em; }
+        .compare-summary { max-width: 1200px; margin: 0 auto 16px; width: 100%; display: flex; gap: 16px; }
+        .compare-summary-card { flex: 1; background: #fff; border-radius: 8px; padding: 14px 18px; border: 1px solid #e0e0e0; text-align: center; }
+        .compare-summary-card .num { font-size: 1.8rem; font-weight: 700; }
+        .compare-summary-card .label { font-size: 0.75rem; color: #888; margin-top: 2px; }
+        .compare-summary-card.shared-card .num { color: #4caf50; }
+        .compare-summary-card.a-card .num { color: #e65100; }
+        .compare-summary-card.b-card .num { color: #1565c0; }
+        .compare-empty { text-align: center; padding: 60px; color: #999; font-size: 0.95rem; }
+
+        /* ===== CCW TAB ===== */
+        .ccw-view { padding: 30px; max-width: 1100px; margin: 0 auto; overflow-y: auto; height: 100%; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+        .ccw-section-header { font-size: 1.1rem; color: #fff; margin: 32px 0 16px; border-bottom: 2px solid #4a90c2; padding-bottom: 6px; }
+        .ccw-doc-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.82rem; line-height: 1.6; }
+        .ccw-doc-table th { background: #2c3e6b; color: #fff; padding: 10px 14px; text-align: left; font-weight: 600; font-size: 0.82rem; border: 1px solid #1a2a4a; }
+        .ccw-doc-table td { padding: 10px 14px; border: 1px solid #d0d5dd; vertical-align: top; color: #333; background: #fff; }
+        .ccw-label-cell { background: #f0f4f8 !important; font-weight: 700; color: #1a1a2e; width: 200px; }
+        .ccw-comp-title-row { background: #1a3a5c !important; font-size: 0.9rem !important; padding: 12px 14px !important; }
+        .ccw-comp-stmt-row { background: #f8f9fa !important; font-size: 0.85rem; padding: 10px 14px; }
+        .ccw-divider-row { background: #3a5a8c !important; font-size: 0.82rem !important; text-align: center; letter-spacing: 0.05em; }
+        .ccw-comp-label { display: inline-block; background: rgba(255,255,255,0.25); padding: 2px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; margin-right: 6px; vertical-align: middle; }
+
+        /* CCW Toolbar */
+        .ccw-toolbar { background: #1a2540; padding: 10px 20px; display: flex; gap: 10px; align-items: center; border-bottom: 1px solid #2a3a5a; flex-shrink: 0; }
+        .ccw-view-btn { padding: 6px 16px; border-radius: 6px; border: 1px solid #3a4a6a; background: transparent; color: #8899bb; font-size: 0.78rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+        .ccw-view-btn:hover { background: #2a3a5a; color: #ccc; }
+        .ccw-view-btn.active { background: #4a90c2; color: #fff; border-color: #4a90c2; }
+        .ccw-compare-select { display: flex; gap: 8px; align-items: center; margin-left: 10px; }
+        .ccw-compare-select select { padding: 6px 12px; border: 1px solid #3a4a6a; border-radius: 6px; background: #1a2540; color: #ccc; font-size: 0.8rem; font-family: inherit; }
+
+        /* CCW Compare Panel */
+        .ccw-compare-panel { height: 100%; overflow: hidden; display: flex; flex-direction: column; }
+        .ccw-compare-cols { display: flex; flex: 1; overflow: hidden; }
+        .ccw-compare-col { flex: 1; display: flex; flex-direction: column; border-right: 1px solid #2a3a5a; overflow: hidden; }
+        .ccw-compare-col:last-child { border-right: none; }
+        .ccw-compare-col-header { padding: 12px 16px; background: #1a2540; font-size: 0.78rem; font-weight: 700; color: #8899bb; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #2a3a5a; flex-shrink: 0; }
+        .ccw-compare-col-body { padding: 16px; overflow-y: auto; flex: 1; font-size: 0.82rem; line-height: 1.6; color: #ddd; background: #131c30; }
+        .ccw-compare-col-body table { width: 100%; }
+        .ccw-compare-es-group { margin-bottom: 16px; }
+        .ccw-compare-es-title { font-size: 0.85rem; font-weight: 700; color: #fff; padding: 8px 12px; background: #2c3e6b; border-radius: 6px 6px 0 0; border: 1px solid #3a4a6a; }
+        .ccw-compare-group-title { font-size: 0.78rem; font-weight: 600; color: #c4b5fd; padding: 6px 12px; background: #253050; border-left: 1px solid #3a4a6a; border-right: 1px solid #3a4a6a; }
+        .ccw-compare-scope-item { padding: 5px 12px; font-size: 0.8rem; color: #e0e0e0; border: 1px solid rgba(255,255,255,0.08); border-top: none; display: flex; align-items: center; gap: 8px; background: #1a2a4a; }
+        .ccw-compare-scope-item:last-child { border-radius: 0 0 6px 6px; }
+        .ccw-compare-status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .ccw-compare-status-dot.green { background: #00ff00; }
+        .ccw-compare-status-dot.magenta { background: #ff00ff; }
+        .ccw-compare-status-dot.cyan { background: #00ffff; }
+
+        /* ===== DISCUSSION NOTES (data table, planner-style) ===== */
+        .tree-note-btn { background: none; border: none; cursor: pointer; font-size: 0.85rem; opacity: 0.4; transition: opacity 0.2s; flex-shrink: 0; padding: 0 4px; margin-left: auto; }
+        .tree-note-btn:hover { opacity: 1; }
+        .tree-note-btn.has-note { opacity: 0.8; }
+        .tree-note-row { padding: 0 14px 8px 38px; display: none; }
+        .tree-note-row.open { display: block; }
+        .tree-note-textarea { width: 100%; margin-top: 6px; padding: 8px 10px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 0.8rem; font-family: inherit; resize: vertical; min-height: 50px; transition: border-color 0.2s; background: #fefefe; }
+        .tree-note-textarea:focus { outline: none; border-color: #7c4dff; background: #fff; }
+        .tree-note-readonly { margin-top: 6px; padding: 8px 10px; font-size: 0.8rem; color: #4a5568; line-height: 1.5; white-space: pre-wrap; background: #f8f8fa; border-radius: 6px; border: 1px solid #e8e8e8; }
+    </style>
+</head>
+<body>
+    <div class="tabs">
+        <button class="tab" data-tab="help">📖 Guide</button>
+        <button class="tab active" data-tab="graph">Knowledge Graph</button>
+        <button class="tab" data-tab="table">Data Table</button>
+        <button class="tab" data-tab="planner">📝 Course Planner</button>
+        <button class="tab" data-tab="compare">⚖ Compare</button>
+        <button class="tab" data-tab="ccw">📄 CCW</button>
+    </div>
+    
+    <div class="tab-content" id="help-view">
+        <div class="help-view">
+            <h1>Evidence Statements Knowledge Graph</h1>
+            <p class="subtitle">Exploring Systems Like a Scientist - Interactive visualization of competencies, evidence statements, and scope items</p>
+            
+            <h2>How to Use</h2>
+            <div class="definition-grid">
+                <div class="definition-card"><div class="term"><span class="term-name">🔍 Filter</span></div><div class="definition">Use dropdowns to filter. When you select a filter, ALL connected nodes remain visible so you can see relationships.</div></div>
+                <div class="definition-card"><div class="term"><span class="term-name">🖱️ Click Nodes</span></div><div class="definition">Click any node to highlight its connections and view details in the sidebar.</div></div>
+                <div class="definition-card"><div class="term"><span class="term-name">🔎 Zoom/Pan</span></div><div class="definition">Use +/- buttons or scroll to zoom. Drag background to pan.</div></div>
+                <div class="definition-card"><div class="term"><span class="term-name">📊 Table View</span></div><div class="definition">Switch to Data Table for a searchable, sortable list view.</div></div>
+            </div>
+            
+            <h2>Node Types</h2>
+            <div class="definition-grid">
+                <div class="definition-card"><div class="term"><div class="dot" style="background: #ff6b6b"></div><span class="term-name">Competencies (3)</span></div><div class="definition">C1: Supports claims with evidence, C2: Evaluates claims, C3: Explains systems</div></div>
+                <div class="definition-card"><div class="term"><div class="dot" style="background: #4ecdc4"></div><span class="term-name">Evidence Statements (10)</span></div><div class="definition">Measurable outcomes describing what students demonstrate</div></div>
+                <div class="definition-card"><div class="term"><div class="dot" style="background: #a78bfa"></div><span class="term-name">Groups (9)</span></div><div class="definition">Thematic categories: Scientific Claims, Data as Evidence, Reasoning, etc.</div></div>
+                <div class="definition-card"><div class="term"><div class="dot" style="background: #6bcb77"></div><span class="term-name">Scope Items (125)</span></div><div class="definition">Specific skills/knowledge students learn, color-coded by status</div></div>
+            </div>
+            
+            <h2>Assessment Status</h2>
+            <div class="color-legend">
+                <div class="color-item"><div class="swatch" style="background: #00ff00;"></div><span><strong>Green</strong> - ES Ready (assessed on PA)</span></div>
+                <div class="color-item"><div class="swatch" style="background: #ff00ff;"></div><span><strong>Magenta</strong> - LO Only (taught, not assessed)</span></div>
+                <div class="color-item"><div class="swatch" style="background: #00ffff;"></div><span><strong>Cyan</strong> - Formative (practiced, not on summative)</span></div>
+            </div>
+            
+            <h2>Mental Model for C2-ES3</h2>
+            <p>To identify what's MISSING from a claim (C2-ES3), students must understand what SHOULD BE THERE. This graph visualizes that complete mental model - the full structure of a well-supported scientific claim including evidence, reasoning, and considerations.</p>
+        </div>
+    </div>
+    
+    <div class="tab-content active" id="graph-view">
+        <div class="graph-filters-bar">
+            <div class="filter-group"><label>Competency</label><select id="graph-comp-filter"><option value="all">All Competencies</option></select></div>
+            <div class="filter-group"><label>Evidence Statement</label><div class="multi-select" id="graph-es-multiselect"></div></div>
+            <div class="filter-group"><label>Group</label><div class="multi-select" id="graph-group-multiselect"></div></div>
+            <div class="filter-group"><label>Status</label><select id="graph-status-filter"><option value="all">All Status</option><option value="green">🟢 Green (ES Ready)</option><option value="magenta">🟣 Magenta (LO Only)</option><option value="cyan">🔵 Cyan (Formative)</option></select></div>
+            <div class="filter-group"><label>Type</label><select id="graph-type-filter"><option value="all">All Types</option><option value="competency">Competencies</option><option value="evidence_statement">Evidence Statements</option><option value="group">Groups</option><option value="scope_item">Scope Items</option></select></div>
+            <button class="clear-btn" id="graph-clear-filters">Clear Filters</button>
+            <button class="toggle-status-btn" id="toggle-status-colors" title="Toggle scope item status colors on/off"><i data-lucide="palette" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;"></i>Status Colors: ON</button>
+            <button class="toggle-card-btn" id="toggle-card-view" title="Switch between graph and card view"><i data-lucide="layout-grid" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;"></i>Card View</button>
+            <div class="filter-count" id="graph-filter-count"><strong>0</strong> nodes</div>
+        </div>
+        <div class="container">
+            <div class="sidebar">
+                <h1>ES Knowledge Graph</h1>
+                <p>Exploring Systems Like a Scientist • 10 Evidence Statements • 3 Competencies</p>
+                
+                <div class="info-box" id="info-box">
+                    <div class="info-box-placeholder" id="info-placeholder">
+                        <div class="icon">👆</div>
+                        <div>Click a node to view details</div>
+                    </div>
+                    <div id="info-content" style="display:none;">
+                        <div class="info-box-header">
+                            <div class="info-box-id" id="info-name"></div>
+                            <div class="info-box-desc" id="info-desc"></div>
+                            <div class="info-box-type-badge" id="info-type-badge"></div>
+                        </div>
+                        <div class="info-box-content">
+                            <div class="info-box-row" id="row-comp"><div class="info-box-label">Comp</div><div class="info-box-value" id="info-comp"></div></div>
+                            <div class="info-box-row" id="row-es"><div class="info-box-label">ES</div><div class="info-box-value" id="info-es"></div></div>
+                            <div class="info-box-row" id="row-group"><div class="info-box-label">Group</div><div class="info-box-value" id="info-group"></div></div>
+                            <div class="info-box-row" id="row-status"><div class="info-box-label">Status</div><div class="info-box-value" id="info-status"></div></div>
+                            <div class="info-box-row" id="row-focus"><div class="info-box-label">Focus</div><div class="info-box-value" id="info-focus"></div></div>
+                            <div class="info-box-row"><div class="info-box-label">Links</div><div class="info-box-value" id="info-connections"></div></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="legend">
+                    <h3>Node Types (click to filter)</h3>
+                    <div class="legend-grid">
+                        <div class="legend-item" data-type="competency"><div class="legend-dot" style="background:#ff6b6b"></div><span>Competencies</span><span class="legend-count" id="count-competency">3</span></div>
+                        <div class="legend-item" data-type="evidence_statement"><div class="legend-dot" style="background:#4ecdc4"></div><span>Evidence St.</span><span class="legend-count" id="count-evidence_statement">10</span></div>
+                        <div class="legend-item" data-type="group"><div class="legend-dot" style="background:#a78bfa"></div><span>Groups</span><span class="legend-count" id="count-group">9</span></div>
+                        <div class="legend-item" data-type="scope_item"><div class="legend-dot" style="background:#6bcb77"></div><span>Scope Items</span><span class="legend-count" id="count-scope_item">125</span></div>
+                    </div>
+                </div>
+                
+                <div class="status-legend" id="sidebar-status-legend">
+                    <span class="status-badge status-green">🟢 ES Ready</span>
+                    <span class="status-badge status-magenta">🟣 LO Only</span>
+                    <span class="status-badge status-cyan">🔵 Formative</span>
+                </div>
+            </div>
+            <div class="graph-container" id="graph-container-main">
+                <svg id="graph"></svg>
+                <div class="tooltip" id="tooltip"></div>
+                <div class="controls" id="graph-controls">
+                    <button class="control-btn" id="zoom-in">+</button>
+                    <button class="control-btn" id="zoom-out">−</button>
+                    <button class="control-btn" id="reset">⟲</button>
+                </div>
+                <div class="card-view-container" id="card-view"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="tab-content" id="table-view">
+        <div class="table-view">
+            <div class="table-header">
+                <h2>Evidence Statements - Hierarchical View</h2>
+                <div class="filters-container">
+                    <div class="filter-group"><label>Competency</label><select class="filter-select" id="comp-filter"></select></div>
+                    <div class="filter-group"><label>Evidence Statement</label><div class="multi-select" id="es-multiselect"></div></div>
+                    <div class="filter-group"><label>Group</label><div class="multi-select" id="group-multiselect"></div></div>
+                    <div class="filter-group"><label>Status</label><select class="filter-select" id="status-filter"><option value="all">All Status</option><option value="green">🟢 Green (ES Ready)</option><option value="magenta">🟣 Magenta (LO Only)</option><option value="cyan">🔵 Cyan (Formative)</option></select></div>
+                    <button class="clear-filters-btn" id="clear-filters"><i class="fa fa-refresh"></i> Reset</button>
+                    <button class="expand-all-btn" id="expand-all">Expand All</button>
+                    <button class="collapse-all-btn" id="collapse-all">Collapse All</button>
+                    <button class="toggle-status-btn" id="toggle-status-colors-tree" style="padding:10px 18px;font-size:0.85rem;">Status Colors: ON</button>
+                </div>
+            </div>
+            <div class="stats-bar" id="stats-bar"></div>
+            <div class="tree-container" id="tree-container">
+                <!-- Hierarchical tree will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="planner-view">
+        <div class="planner-view">
+            <div class="planner-login-overlay" id="planner-login-overlay" style="display:flex;position:absolute;inset:0;background:rgba(248,249,250,.95);z-index:100;align-items:center;justify-content:center;">
+                <div style="background:#fff;border-radius:16px;padding:36px 44px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.12);max-width:420px;width:90%;">
+                    <h2 style="font-size:20px;color:#1B2A4A;margin-bottom:6px;">📝 Course Planner</h2>
+                    <p style="font-size:14px;color:#5A6B7F;margin-bottom:20px;line-height:1.5;">Enter your name to start planning.<br>Notes and checkboxes are shared with your team.</p>
+                    <div style="display:flex;gap:10px;">
+                        <input type="text" id="planner-login-input" placeholder="Your name" style="flex:1;padding:12px 16px;border:2px solid #E2E8F0;border-radius:10px;font-size:16px;font-family:inherit;outline:none;" onkeydown="if(event.key==='Enter')plannerLoginGo()">
+                        <button onclick="plannerLoginGo()" style="padding:12px 24px;border-radius:10px;border:none;background:#4a90c2;color:#fff;font-size:15px;font-weight:600;cursor:pointer;">Join</button>
+                    </div>
+                    <div id="planner-returning" style="display:none;margin-top:18px;padding-top:16px;border-top:1px solid #E2E8F0;">
+                        <p style="font-size:13px;color:#8896A6;margin-bottom:10px;">Or continue as:</p>
+                        <div id="planner-returning-btns" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="planner-toolbar">
+                <div id="planner-user-badge" class="planner-user-badge" style="display:none;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;color:#fff;font-size:0.8rem;font-weight:600;">
+                    <span id="planner-user-av" style="width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;"></span>
+                    <span id="planner-user-name"></span>
+                </div>
+                <span class="admin-badge" id="planner-admin-badge" style="display:none;">🔒 Admin</span>
+                <button class="planner-btn" id="planner-switch-btn" style="display:none;font-size:0.75rem;padding:6px 12px;" onclick="plannerSwitchUser()">🔄 Switch User</button>
+                <button class="planner-btn" id="planner-logout-btn" style="display:none;font-size:0.75rem;padding:6px 12px;" onclick="plannerLogout()">↩ Log Out</button>
+                <input type="text" class="planner-search" id="planner-search" placeholder="Search scope items by keyword...">
+                <span class="search-match-count" id="search-match-count"></span>
+                <div class="planner-progress-bar">
+                    <span id="planner-progress-text">ID: 0/0 · AD: 0/0</span>
+                    <div class="planner-progress-fill"><div class="planner-progress-fill-inner" id="planner-progress-fill" style="width:0%"></div></div>
+                    <span id="planner-progress-pct">0%</span>
+                </div>
+                <button class="planner-btn" id="planner-check-all">✓ Check All Visible</button>
+                <button class="planner-btn" id="planner-uncheck-all">✗ Uncheck All</button>
+                <button class="planner-btn" id="planner-export-btn">📥 Export Notes</button>
+                <span class="planner-sync" id="planner-sync"></span>
+            </div>
+            <div class="planner-body">
+                <div class="planner-main" id="planner-main">
+                    <!-- Rendered by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="compare-view">
+        <div class="compare-view">
+            <div class="compare-toolbar">
+                <div>
+                    <label>Compare By</label>
+                    <select id="compare-mode">
+                        <option value="competency">Competencies</option>
+                        <option value="es" selected>Evidence Statements</option>
+                        <option value="group">Groups</option>
+                    </select>
+                </div>
+                <div>
+                    <label>Selection A</label>
+                    <select id="compare-a"></select>
+                </div>
+                <span class="compare-vs">vs</span>
+                <div>
+                    <label>Selection B</label>
+                    <select id="compare-b"></select>
+                </div>
+                <button class="planner-btn" id="compare-clear" style="margin-left:auto;">✕ Clear</button>
+            </div>
+            <div class="compare-body" id="compare-body">
+                <div class="compare-empty">Select two items above to compare their scope items side by side</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="ccw-view">
+        <!-- CCW Compare toolbar -->
+        <div class="ccw-toolbar" id="ccw-toolbar">
+            <span style="font-size:0.8rem;font-weight:600;color:#ccc;">View:</span>
+            <button class="ccw-view-btn active" id="ccw-view-doc" onclick="ccwShowDoc()">Full Document</button>
+            <button class="ccw-view-btn" id="ccw-view-compare" onclick="ccwShowCompare()">Side-by-Side Compare</button>
+            <div class="ccw-compare-select" id="ccw-compare-controls" style="display:none;">
+                <select id="ccw-compare-comp" onchange="ccwRunCompare()">
+                    <option value="C1">C1 — Supports a Scientific Claim</option>
+                    <option value="C2">C2 — Evaluates Scientific Claims</option>
+                    <option value="C3">C3 — Explains Real-World Systems</option>
+                </select>
+                <button class="ccw-view-btn" onclick="ccwExportCompare()" style="margin-left:8px;">Export Compare</button>
+            </div>
+        </div>
+        
+        <!-- Full document view -->
+        <div class="ccw-view" id="ccw-doc-panel">
+            <h1 style="font-family:'Georgia',serif;color:#fff;font-size:1.5rem;">Exploring Systems Like a Scientist</h1>
+            <p style="color:#aaa;font-size:0.85rem;margin-bottom:24px;">Competency Context Worksheet</p>
+<table class="ccw-doc-table"><tr><th colspan="3">Course Level Scope Notes</th></tr><tr><td colspan="3">Systems Perspectives Domain Outcome: <strong>Students explore complex systems in the world around them</strong> – they analyze interdependencies among peoples, cultures, and environments to apply evidence-based reasoning for sustainable solutions.<br><br>Note that it is only the initial part of the outcome that has to be represented completely.<br><br>Exploring Systems Like a Scientist introduces science as a way of knowing, focusing on how evidence, logic, and systematic inquiry are used to understand the world and inform decisions. The course emphasizes how scientists ask questions, evaluate evidence, and revise explanations over time, rather than memorizing isolated facts. By exploring unifying scientific ideas in systems, students build the ability to evaluate scientific claims, recognize uncertainty, and apply scientific reasoning to real-world challenges in health, environment, and society.<br><br>Key Concepts:<br><br>· Inquiry and Reasoning replacing a strict scientific method<br>· Evaluating Evidence, Data, and Scientific Claims for application<br>· Uncertainty, Reproducibility, and Peer Review- how to ensure that scientific findings are trustworthy<br>· Distinguishing Science from Pseudoscience and Misinformation<br>· Awareness of ideas in major fields of science (e.g., evolution, earth and energy systems, human health, forces and interactions). The specific examples will be aligned to the scenario that the student chooses to follow (see note below)<br>· Models and Representations in Science – examples should be simple, accessible, relevant<br>-change in our knowledge – how that shifts models and why this is a strength<br>· Systems Thinking in Scientific Contexts<br>· Applying Scientific Reasoning to Societal and Technological Challenges<br>-Constructing evidence-based explanations<br><br>Design Notes: The student is going to pick a scenario and explore all three competencies in the context of that scenario. There should not be a distinct progression of modules from comp 1 to 3. All comps are integrated into their growth of understanding of the nuanced scenario. The course will be constructed so that a student will move through the learning using a specific scenario as context, while other students will be doing the same things but using a different scenario. These parallel paths will all support the same assessment and competencies, but will allow the student to practice these skills using one specific scenario.</td></tr></table>
+<table class="ccw-doc-table"><tr><th colspan="3">Interdisciplinary Components</th></tr><tr><td colspan="3">Analytical &amp; Quantitative Skills: Data evaluation and interpretation<br>Society, Civic, &amp; Cultural Engagement: development of scientific knowledge, science as a human endeavor, historical and current scientific understanding<br>Human Thriving: awareness of the world around you and curiosity/desire to engage with. Inquiry as a mindset</td></tr></table>
+<table class="ccw-doc-table"><tr><th colspan="3">Course Level Assessment Strategy and Recommendations</th></tr><tr><td colspan="3"><strong>Modality: </strong>Performance assessment<br><br><strong>Rationale: </strong>This course requires learners to engage in inquiry-based reasoning about the world through the lens of science and would be best assessed through the creation of an authentic artifact. All competencies should be assessed at level 2 as they will require explanation and straightforward application.<br><br><strong>Potential Evidence of Competency at Specified Level</strong>:<br><br><strong>WBL Considerations:</strong><br><br><strong>Artifact Vision: </strong><br><br>Choose your own adventure: the student moves through examples that scaffold and grow their ability to evaluate a claim, gather evidence, and consider conclusions. They can choose a track that interests them (some possible ideas listed below). Ultimately, they will write a scientific claim using evidence to support their claim about that concept. This claim should demonstrate:<br>Make a clear claim<br>Have evidence to support (could be pulled from the course, or from other sources)<br>Ability to communicate science concepts including foundational concepts<br>Ability to connect pieces of a complex system and show how they interact<br>Scientific considerations, ethical considerations, society impacts<br>Scientific ethics – what are the impacts to the system (body, community, earth, all levels)<br>Demonstrate understanding of the scientific concepts associated<br><br>Static videos of someone making claims and they have to respond in real time (pause and respond tool)<br>Push towards validating or invalidating (or maybe, this is nuanced)<br>Even if they agree, they need to provide evidence for their reasoning<br>Identify hidden assumptions, misinformation, bias<br>Are they demonstrating a systems perspective<br>Multiple clips, each one asking them to watch for one specific thing<br>What assumptions/biases are being made<br>What can be validated or invalidated about the claim<br>What aspects of the system are not being recognized<br>All of the responses are not about finding the ‘right’ answer, but instead focusing on the process and right way to think and communicate<br>Time limit (ten minutes? We do not need this to be a polished written response)<br>open resource (they can use notes, web, etc)<br><br>Possible nuanced scenarios to explore in the course and for the assessment<br>Invasive species<br>Fire suppression<br>Urban green spaces and community health<br>Antibiotic resistance<br>Hygiene hypothesis<br>Stress as toxic or adaptive<br>Recycling<br>GMOs in agriculture</td></tr></table>
+<table class="ccw-doc-table"><tr><th colspan="3">Course Level LR Strategy and Recommendations</th></tr><tr><td colspan="3"><em style="color:#999;">Learning resource for this course will be chosen to align with the course’s intent of helping students explore complex systems in the world and analyze interdependencies among people, cultures, and environments to apply evidence-based scientific reasoning for sustainable solutions. LRs will emphasize real world scenarios and applications, as well as a variety of evidence-based strategies to help students develop a scientific framework.<br><br> 
+
+A variety of resources such as textbooks, scholarly sources, multimedia resources, case studies, and scenarios will be used with emphasis on experiential, real-world, and interactive learning where possible.
+</em></td></tr></table>
+<table class="ccw-doc-table"><tr><th colspan="3">Course Level Critical Tools and Technologies Strategy and Recommendations</th></tr><tr><td colspan="3"><em style="color:#999;">(No content yet)</em></td></tr></table>
+<h2 class="ccw-section-header">Course Competencies and Context Tables</h2>
+<table class="ccw-doc-table ccw-comp-table" data-comp="C1"><tr><th colspan="3" class="ccw-comp-title-row" id="ccw-C1"><span class="ccw-comp-label">C1</span> <strong>Competency Title: Supports a Scientific Claim</strong></th></tr><tr><td colspan="3" class="ccw-comp-stmt-row"><em><strong>Competency Statement: </strong>The learner supports a scientific claim with evidence.</em></td></tr><tr><td class="ccw-label-cell"><strong>Target Level  </strong></td><td colspan="2">2</td></tr><tr><th>Skill Category</th><th>Skill Title</th><th>Skill Statements</th></tr><tr><td>Critical Thinking</td><td>Factual Evidence for Judgment Forming</td><td>Identify factual evidence supporting a judgment.</td></tr><tr><td>Critical Thinking</td><td>Ideas and Evidence Connection</td><td>Make connections between ideas and evidence.</td></tr><tr><td>Scientific Reasoning</td><td>Draw Conclusions Based on Scientific Data</td><td>Draw conclusions based on scientific data and evidence.</td></tr><tr><th colspan="3" class="ccw-divider-row">Competency Detail</th></tr><tr><td class="ccw-label-cell"><strong>Assessment Recommendations </strong></td><td colspan="2"><strong>Modality: </strong>Performance assessment<br><strong>Rationale: </strong>Learners will support scientific claims with evidence but will generally only draw from course materials (i.e., they will not conduct research or read primary sources) which is appropriately targeted to a level 2.<br><strong>Potential Evidence of Competency at Specified Level</strong>:<br>Construct a scientific claim<br>Explain what makes a claim scientific<br>Identify credible evidence that supports a scientific claim<br>Describe scientific, societal, and ethical aspects of a scientific claim<br>Explain relevant scientific concepts</td></tr><tr><td class="ccw-label-cell"><strong>Additional Scope Notes and Requirements</strong></td><td colspan="2">This competency focuses on the ability of the student to get the evidence that they need to support a claim.<br>Pseudoscience vs science<br>Misinformation<br>What is a claim? What makes it scientific? (they will be making a claim, so support in how to make a claim)<br>Different kinds of evidence – quantitative, observational, etc<br>Bias and credibility of evidence<br>How we find evidence – primary and how our scientific learning shifts over time. This is a strength<br>How we find evidence – secondary and how the average person can learn and discover<br>How to make sure the claim and the evidence line up. Describing the connection<br>What is appropriate support, and how to adequately describe that support<br>Assumptions and how to uncover them<br>Interdisciplinary alignment:<br>Human Thriving - having curiosity about the world around you. Why do we think this? Is there a good reason to think this?<br>Analytical and Quantitative Skills – examining data, interpreting it, evaluating it<br>Society, Civic, and Cultural Engagement – how a claim can change over time, a historical perspective of scientific discovery.<br>Out of scope:<br>Evaluating the quality of methods, statistical analysis of evidence, no math, no primary literature review, they don’t do any experiments themselves.</td></tr><tr><td class="ccw-label-cell"><strong>Principled Leadership Alignment</strong></td><td colspan="2">Consider how the <strong>4 Principled Leadership Lenses</strong> might apply:<br>
+· Self: Cultivating ethical identity, resilience, and purpose<br>Personal biases, alignment to values, self-reflection, having integrity as you look at evidence, being open minded enough to consider other perspectives, curiosity, being accountable to back up what you are saying<br>· Team: Practicing collaboration, empathy, and shared accountability<br>Listening to others and trying to understand their perspective, influencing when you don’t have authority – using the evidence you have to help persuade, increase understanding. Navigating conflict. Ethical considerations. Communicating with respect<br>· Community: Applying cultural awareness and advocacy for equity<br><strong>-Society-Considering impacts of claims/solutions on systems<br>Ethical considerations</strong><br>· <strong>Society: Leading innovation and systems-level change with ethical foresight</strong></td></tr><tr><td class="ccw-label-cell"><strong>AI Framework Alignment</strong></td><td colspan="2">Consider how the<strong> 4 AI Framework lenses</strong> might apply:<br>· Human Insight: Exploring identity, habits, and ethical awareness in a digital age<br>· Cooperative Intelligence: Understanding collaboration between humans and machines<br>Use of technology for identifying evidence for a claim<br>· Social Awareness: Examining equity, bias, and justice in AI systems<br>How tech might introduce bias<br>· Ethical Innovation: Applying systems thinking and foresight to design responsible futures</td></tr></table>
+<table class="ccw-doc-table ccw-comp-table" data-comp="C2"><tr><th colspan="3" class="ccw-comp-title-row" id="ccw-C2"><span class="ccw-comp-label">C2</span> <strong>Competency Title: Evaluates Scientific Claims</strong></th></tr><tr><td colspan="3" class="ccw-comp-stmt-row"><em><strong>Competency Statement: </strong>The learner evaluates scientific claims.</em></td></tr><tr><td class="ccw-label-cell"><strong>Target Level  </strong></td><td colspan="2">2</td></tr><tr><th>Skill Category</th><th>Skill Title</th><th>Skill Statements</th></tr><tr><td>Scientific Reasoning</td><td>Scientific Reasoning Critique</td><td>Critique the scientific reasoning of others using logic and evidence.</td></tr><tr><td>Critical Thinking</td><td>Evidence Evaluation Against Criteria</td><td>Evaluate evidence based on specific criteria.</td></tr><tr><td>Analytical Thinking</td><td>Evaluate Analytically</td><td>Evaluate ideas, opinions, and facts analytically.</td></tr><tr><th colspan="3" class="ccw-divider-row">Competency Detail</th></tr><tr><td class="ccw-label-cell"><strong>Assessment Recommendations </strong></td><td colspan="2"><strong>Modality: </strong>Performance assessment<br><strong>Rationale: </strong>Learners will evaluate scientific claims but will generally only draw from course materials which is appropriately targeted to a level 2.<br><strong>Potential Evidence of Competency at Specified Level</strong>:<br>Analyze evidence used to support a scientific claim<br>Explain what evidence is missing to support a scientific claim<br>Describe what considerations (scientific, societal, and/or ethical) are missing from a scientific claim<br>Critique a scientific claim using foundational scientific knowledge<br>Identifies misinformation or bias in a claim</td></tr><tr><td class="ccw-label-cell"><strong>Additional Scope Notes and Requirements</strong></td><td colspan="2">This competency focuses on looking at an existing claim and asking if the evidence supports it or what is missing.<br>Using the context of the scenario that they are using in the course (Choose your own adventure) to make decisions about how to evaluate the claim<br>Simple models and how they can be used to help understand a claim and the evidence<br>Analytical and Quantitative Skills – examining data, interpreting it, evaluating it<br>Out of scope:<br>Formal scientific writing or evaluation. Examples that don&#x27;t have a chance for balanced discussion, no opportunity for nuance or ambiguity. No flat earth debates.</td></tr><tr><td class="ccw-label-cell"><strong>Principled Leadership Alignment</strong></td><td colspan="2">Consider how the <strong>4 Principled Leadership Lenses</strong> might apply: <br>· Self: Cultivating ethical identity, resilience, and purpose<br>Bias in self and others<br>· Team: Practicing collaboration, empathy, and shared accountability<br>The role of building a relationship in being able to evaluate a claim – can you fully understand someone’s claim even if you don’t agree with it<br>· Community: Applying cultural awareness and advocacy for equity<br>Recognizing culturally lens and the role of communication. If you can’t understand a claim, can you evaluate it?<br>· <strong>Society: Leading innovation and systems-level change with ethical foresight</strong></td></tr><tr><td class="ccw-label-cell"><strong>AI Framework Alignment</strong></td><td colspan="2">Consider how the<strong> 4 AI Framework lenses</strong> might apply:<br>· Human Insight: Exploring identity, habits, and ethical awareness in a digital age<br>Reliance on an AI evaluation – is this okay under certain circumstances? Safeguards?<br>· Cooperative Intelligence: Understanding collaboration between humans and machines<br>· Social Awareness: Examining equity, bias, and justice in AI systems<br>What biases are inherent in an AI that should be watched for while evaluating claims, and what can AI do to help improve equity and remove bias?<br>· Ethical Innovation: Applying systems thinking and foresight to design responsible futures</td></tr></table>
+<table class="ccw-doc-table ccw-comp-table" data-comp="C3"><tr><th colspan="3" class="ccw-comp-title-row" id="ccw-C3"><span class="ccw-comp-label">C3</span> <strong>Competency Title: Explains Real-World Systems</strong></th></tr><tr><td colspan="3" class="ccw-comp-stmt-row"><em><strong>Competency Statement: </strong>The learner explains real-world systems using scientific reasoning.</em></td></tr><tr><td class="ccw-label-cell"><strong>Target Level  </strong></td><td colspan="2">2</td></tr><tr><th>Skill Category</th><th>Skill Title</th><th>Skill Statements</th></tr><tr><td>Analytical Thinking<br>AQ, SP</td><td>Identify Patterns and Linkages</td><td>Identify patterns and linkages between different concepts.</td></tr><tr><td>Systems Thinking<br>SP, SC, TD</td><td>Demonstrate Connections in Systems</td><td>Demonstrate connections among the various parts of complex systems.</td></tr><tr><td>Systems Thinking<br>PL, SP, SC, TD</td><td>Systems and Structures Analysis</td><td>Analyze how systems and structures interact to influence an outcome.</td></tr><tr><th colspan="3" class="ccw-divider-row">Competency Detail</th></tr><tr><td class="ccw-label-cell"><strong>Assessment Recommendations </strong></td><td colspan="2"><strong>Modality: </strong>Performance assessment<br><strong>Rationale: </strong>Learners will explain a real-world system which is appropriately targeted to a level 2.<br><strong>Potential Evidence of Competency at Specified Level</strong>:<br>Apply scientific inquiry to real-world systems<br>Demonstrate systems perspective<br>Communicate science concepts accurately<br>Explain interactions of components of a system<br>Explain cultural/societal/ethical aspects of a system</td></tr><tr><td class="ccw-label-cell"><strong>Additional Scope Notes and Requirements</strong></td><td colspan="2">Connecting foundational scientific concepts to specific evidence of the scenario (for example, the carbon cycle to a fire suppression discussion)<br>Analyze the components of a system and how they interact. These can be specific to the scenario (ie, the body, the ecosystem) but should also be a general introduction to what a system is and the value of thinking with a systems perspective<br>How to look at a system and ask scientific questions about it<br>Look at a system with a cultural lens, society lens, ethical lens<br>When ethics supports the evidence for a claim, include it.<br>When ethical problems arise, they need to be acknowledged.<br>Human subject testing for example. Biocontrol efforts for example.<br>An ethnocentric perspective – recognizing we have a bias as humans but maybe there is a cultural and societal acceptance for this. The ethics of accepting who we are as a society.<br>Intended and unintended impacts of decisions<br>Human Thriving - being able to consider alternate viewpoints or how impacts might be different from different perspectives<br>Society, Civic, and Cultural Engagement – Thinking about how societies, cultures, governments, etc, are part of the system to consider<br>Out of scope:<br>Finding the right answer. These are nuanced scenarios<br>Stay focused on science. While society, culture, government are part of understanding the system, the treatment of those topics should be very high level.<br>Topics that don’t allow for multiple balanced perspectives. No flat earth debate.</td></tr><tr><td class="ccw-label-cell"><strong>Principled Leadership Alignment</strong></td><td colspan="2">Consider how the <strong>4 Principled Leadership Lenses</strong> might apply:<br>
+· Self: Cultivating ethical identity, resilience, and purpose<br>· Team: Practicing collaboration, empathy, and shared accountability<br>· Community: Applying cultural awareness and advocacy for equity<br>· <strong>Society: Leading innovation and systems-level change with ethical foresight</strong><br><strong>Making connections far beyond the self. How do governments, cultures, etc, play a role in this system.</strong></td></tr><tr><td class="ccw-label-cell"><strong>AI Framework Alignment</strong></td><td colspan="2">Consider how the<strong> 4 AI Framework lenses</strong> might apply:<br>· Human Insight: Exploring identity, habits, and ethical awareness in a digital age<br>· Cooperative Intelligence: Understanding collaboration between humans and machines<br>· Social Awareness: Examining equity, bias, and justice in AI systems<br>· Ethical Innovation: Applying systems thinking and foresight to design responsible futures</td></tr></table>
+        </div>
+        
+        <!-- Side-by-side compare view -->
+        <div class="ccw-compare-panel" id="ccw-compare-panel" style="display:none;">
+            <div class="ccw-compare-cols">
+                <div class="ccw-compare-col" id="ccw-compare-left">
+                    <div class="ccw-compare-col-header">CCW Competency Detail</div>
+                    <div class="ccw-compare-col-body" id="ccw-compare-left-body"></div>
+                </div>
+                <div class="ccw-compare-col" id="ccw-compare-right">
+                    <div class="ccw-compare-col-header">Knowledge Graph — ES &amp; Scope Items</div>
+                    <div class="ccw-compare-col-body" id="ccw-compare-right-body"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// ===== DATA =====
+const nodes = [
+    // Competencies
+    { id: "C1", name: "C1: Supports Claims", description: "The learner supports a scientific claim with evidence. (Level 2)", type: "competency" },
+    { id: "C2", name: "C2: Evaluates Claims", description: "The learner evaluates scientific claims. (Level 2)", type: "competency" },
+    { id: "C3", name: "C3: Explains Systems", description: "The learner explains real-world systems using scientific reasoning. (Level 2)", type: "competency" },
+    
+    // Evidence Statements - C1
+    { id: "C1-ES1", name: "C1-ES1", description: "The learner selects relevant, credible evidence that supports a scientific claim.", type: "evidence_statement", competency: "C1" },
+    { id: "C1-ES2", name: "C1-ES2", description: "The learner explains how evidence logically supports or fails to support a claim.", type: "evidence_statement", competency: "C1" },
+    { id: "C1-ES3", name: "C1-ES3", description: "The learner explains the potential social or ethical benefits, risks, or consequences of the dissemination of a scientific claim.", type: "evidence_statement", competency: "C1" },
+    
+    // Evidence Statements - C2
+    { id: "C2-ES1", name: "C2-ES1", description: "The learner describes the quality of evidence used to support a scientific claim.", type: "evidence_statement", competency: "C2" },
+    { id: "C2-ES2", name: "C2-ES2", description: "The learner explains misinformation, bias, or unsupported assumptions and conclusions related to a claim or its evidence.", type: "evidence_statement", competency: "C2" },
+    { id: "C2-ES3", name: "C2-ES3", description: "The learner explains what is missing from a claim's evidence or reasoning, including gaps in scientific, societal, or ethical considerations.", type: "evidence_statement", competency: "C2" },
+    
+    // Evidence Statements - C3
+    { id: "C3-ES1", name: "C3-ES1", description: "The learner identifies components of a real-world system.", type: "evidence_statement", competency: "C3" },
+    { id: "C3-ES2", name: "C3-ES2", description: "The learner analyzes how the components of a real-world system interact with each other.", type: "evidence_statement", competency: "C3" },
+    { id: "C3-ES3", name: "C3-ES3", description: "The learner explains observed behaviors, patterns, or outcomes within a system using scientific concepts.", type: "evidence_statement", competency: "C3" },
+    { id: "C3-ES4", name: "C3-ES4", description: "The learner describes the cultural, societal, or ethical dimensions that influence or are influenced by the system.", type: "evidence_statement", competency: "C3" },
+    
+    // Groups - C1
+    { id: "G-C1-1", name: "Scientific Claims", description: "Understanding what scientific claims are and how they are structured", type: "group", focus: "Understanding what scientific claims are, how they are structured, and how to distinguish scientific claims from non-scientific statements." },
+    { id: "G-C1-2", name: "Data as Evidence", description: "Recognizing and evaluating different types of evidence", type: "group", focus: "Recognizing different types of evidence and evaluating their credibility, limitations, and appropriateness for supporting scientific claims." },
+    { id: "G-C1-3", name: "Reasoning and Support", description: "How evidence supports claims", type: "group", focus: "Explaining how evidence is used to support claims and determining whether the reasoning connecting evidence to a claim is adequate." },
+    { id: "G-C1-4", name: "Nature of Scientific Knowledge", description: "How scientific knowledge develops", type: "group", focus: "Understanding how scientific knowledge develops over time and how communicating claims can have ethical and societal consequences." },
+    
+    // Groups - C2
+    { id: "G-C2-1", name: "Evaluating Claims Using Evidence", description: "Is the claim supported?", type: "group", focus: "What is the scientific claim, and is it supported?" },
+    { id: "G-C2-2", name: "Evaluating Claims Through Models", description: "How does the reasoning work?", type: "group", focus: "How does the reasoning work?" },
+    { id: "G-C2-3", name: "Evaluating Claims Using Data", description: "What does evidence show?", type: "group", focus: "What does the evidence actually show?" },
+    { id: "G-C2-4", name: "Strength and Sufficiency", description: "Is evidence good enough?", type: "group", focus: "Is the evidence good enough and appropriate?" },
+    { id: "G-C2-5", name: "Bias and Misinformation", description: "Can the source be trusted?", type: "group", focus: "Can the source and presentation be trusted?" },
+    { id: "G-C2-6", name: "Responsible Tech Use", description: "Using digital tools responsibly", type: "group", focus: "Using technology responsibly in evaluation" },
+    
+    // Groups - C3
+    { id: "G-C3-1", name: "Systems Thinking Foundations", description: "System structure", type: "group", focus: "What is the system and how is it structured?" },
+    { id: "G-C3-2", name: "Applying Scientific Reasoning", description: "How systems work and change", type: "group", focus: "How does the system work, and what happens when something changes?" },
+    { id: "G-C3-3", name: "Societal and Ethical Dimensions", description: "Human and value perspectives", type: "group", focus: "How do people, values, and perspectives shape the system and its impacts?" },
+    
+    // Scope Items - C1-ES1 Group 1
+    { id: "S1", name: "Defining what is a scientific claim", type: "scope_item", status: "magenta", es: "C1-ES1", group: "G-C1-1", competency: "C1" },
+    { id: "S2", name: "Identify the role of scientific claims in asking questions and sharing ideas", type: "scope_item", status: "magenta", es: "C1-ES1", group: "G-C1-1", competency: "C1" },
+    { id: "S3", name: "Identify the components of a scientific claim", type: "scope_item", status: "green", es: "C1-ES1", group: "G-C1-1", competency: "C1" },
+    { id: "S4", name: "Identify the claim, supporting evidence, and underlying assumptions", type: "scope_item", status: "green", es: "C1-ES1", group: "G-C1-1", competency: "C1" },
+    { id: "S5", name: "Distinguish between statements of fact, opinion, and inference", type: "scope_item", status: "green", es: "C1-ES1", group: "G-C1-1", competency: "C1" },
+    { id: "S6", name: "Distinguishing scientific claims from non-scientific claims (e.g., pseudoscience and misinformation)", type: "scope_item", status: "magenta", es: "C1-ES1", group: "G-C1-1", competency: "C1" },
+    
+    // Scope Items - C1-ES1 Group 2
+    { id: "S7", name: "Distinguishing quantitative, qualitative, and observational evidence", type: "scope_item", status: "green", es: "C1-ES1", group: "G-C1-2", competency: "C1" },
+    { id: "S8", name: "Considering bias, assumptions, and credibility of sources", type: "scope_item", status: "green", es: "C1-ES1", group: "G-C1-2", competency: "C1" },
+    { id: "S9", name: "Identifying underlying assumptions in claims and evidence", type: "scope_item", status: "green", es: "C1-ES1", group: "G-C1-2", competency: "C1" },
+    { id: "S10", name: "Locating evidence through secondary sources accessible to non-specialists", type: "scope_item", status: "magenta", es: "C1-ES1", group: "G-C1-2", competency: "C1" },
+    { id: "S11", name: "Evaluating the credibility of secondary sources", type: "scope_item", status: "green", es: "C1-ES1", group: "G-C1-2", competency: "C1" },
+    
+    // Scope Items - C1-ES1 Group 3
+    { id: "S12", name: "Understanding how the type of source affects credibility", type: "scope_item", status: "green", es: "C1-ES1", group: "G-C1-3", competency: "C1" },
+    
+    // Scope Items - C1-ES1 Group 4
+    { id: "S13", name: "Differentiating scientific claims from scientific knowledge", type: "scope_item", status: "magenta", es: "C1-ES1", group: "G-C1-4", competency: "C1" },
+    { id: "S14", name: "Recognizing how scientific knowledge evolves over time", type: "scope_item", status: "magenta", es: "C1-ES1", group: "G-C1-4", competency: "C1" },
+    { id: "S15", name: "Recognizing that scientific claims are testable and open to revision", type: "scope_item", status: "magenta", es: "C1-ES1", group: "G-C1-4", competency: "C1" },
+    { id: "S16", name: "Considering the historical context of scientific discovery", type: "scope_item", status: "magenta", es: "C1-ES1", group: "G-C1-4", competency: "C1" },
+    { id: "S17", name: "Understanding the role of peer review in validating scientific findings", type: "scope_item", status: "magenta", es: "C1-ES1", group: "G-C1-4", competency: "C1" },
+    
+    // Scope Items - C1-ES2 Group 1
+    { id: "S18", name: "Constructing a scientific claim", type: "scope_item", status: "magenta", es: "C1-ES2", group: "G-C1-1", competency: "C1" },
+    { id: "S19", name: "Using the CER Framework for Constructing a Claim", type: "scope_item", status: "cyan", es: "C1-ES2", group: "G-C1-1", competency: "C1" },
+    { id: "S20", name: "Translating scientific language to plain language", type: "scope_item", status: "green", es: "C1-ES2", group: "G-C1-1", competency: "C1" },
+    
+    // Scope Items - C1-ES2 Group 3
+    { id: "S21", name: "Connecting evidence to claims clearly", type: "scope_item", status: "green", es: "C1-ES2", group: "G-C1-3", competency: "C1" },
+    { id: "S22", name: "Explaining why evidence adequately supports a claim", type: "scope_item", status: "green", es: "C1-ES2", group: "G-C1-3", competency: "C1" },
+    { id: "S23", name: "Identifying when evidence does not adequately support a claim", type: "scope_item", status: "green", es: "C1-ES2", group: "G-C1-3", competency: "C1" },
+    { id: "S24", name: "Using scientific principles to explain why evidence supports a claim", type: "scope_item", status: "green", es: "C1-ES2", group: "G-C1-3", competency: "C1" },
+    { id: "S25", name: "Avoiding circular reasoning where evidence is restated as justification", type: "scope_item", status: "cyan", es: "C1-ES2", group: "G-C1-3", competency: "C1" },
+    { id: "S26", name: "Distinguishing between correlation and causation when connecting evidence to claims", type: "scope_item", status: "green", es: "C1-ES2", group: "G-C1-3", competency: "C1" },
+    
+    // Scope Items - C1-ES3 Group 4
+    { id: "S27", name: "Considering ethical implications of communicating scientific claims to the public", type: "scope_item", status: "green", es: "C1-ES3", group: "G-C1-4", competency: "C1" },
+    { id: "S28", name: "Not about ethics as content, but ethics as consequence", type: "scope_item", status: "green", es: "C1-ES3", group: "G-C1-4", competency: "C1" },
+    { id: "S29", name: "Aligns with misinformation and public impact examples", type: "scope_item", status: "green", es: "C1-ES3", group: "G-C1-4", competency: "C1" },
+    
+    // C2-ES1 Scope Items
+    { id: "S30", name: "Analyze evidence used to support existing scientific claims", type: "scope_item", status: "green", es: "C2-ES1", group: "G-C2-1", competency: "C2" },
+    { id: "S31", name: "Identify missing, weak, or misapplied evidence", type: "scope_item", status: "green", es: "C2-ES1", group: "G-C2-1", competency: "C2" },
+    { id: "S32", name: "Explain why a claim is or is not supported based on available evidence", type: "scope_item", status: "green", es: "C2-ES1", group: "G-C2-1", competency: "C2" },
+    { id: "S33", name: "Interpret scientific claims using basic scientific models or concepts", type: "scope_item", status: "green", es: "C2-ES1", group: "G-C2-2", competency: "C2" },
+    { id: "S34", name: "Restate the claim in plain language and identify the basic scientific concept/model", type: "scope_item", status: "green", es: "C2-ES1", group: "G-C2-2", competency: "C2" },
+    { id: "S35", name: "Explain how the claim is supposed to work using that concept", type: "scope_item", status: "green", es: "C2-ES1", group: "G-C2-2", competency: "C2" },
+    { id: "S36", name: "Predict what kinds of evidence would be relevant", type: "scope_item", status: "cyan", es: "C2-ES1", group: "G-C2-2", competency: "C2" },
+    { id: "S37", name: "Recognizing the role of controls in evaluating whether evidence supports a claim", type: "scope_item", status: "cyan", es: "C2-ES1", group: "G-C2-2", competency: "C2" },
+    { id: "S38", name: "Apply simple evaluation criteria to assess scientific reasoning", type: "scope_item", status: "green", es: "C2-ES1", group: "G-C2-2", competency: "C2" },
+    { id: "S39", name: "Check whether the evidence directly measures what the claim asserts", type: "scope_item", status: "green", es: "C2-ES1", group: "G-C2-2", competency: "C2" },
+    { id: "S40", name: "Check whether there is a plausible mechanism connecting the evidence to the claim", type: "scope_item", status: "green", es: "C2-ES1", group: "G-C2-2", competency: "C2" },
+    { id: "S41", name: "Check whether appropriate comparisons or controls were used", type: "scope_item", status: "cyan", es: "C2-ES1", group: "G-C2-2", competency: "C2" },
+    { id: "S42", name: "Use foundational science knowledge to critique claims", type: "scope_item", status: "green", es: "C2-ES1", group: "G-C2-2", competency: "C2" },
+    { id: "S43", name: "Considering whether a claim has been peer-reviewed", type: "scope_item", status: "magenta", es: "C2-ES1", group: "G-C2-2", competency: "C2" },
+    { id: "S44", name: "Examine and interpret data or evidence related to claims", type: "scope_item", status: "green", es: "C2-ES1", group: "G-C2-3", competency: "C2" },
+    { id: "S45", name: "Reading graphs and tables accurately", type: "scope_item", status: "green", es: "C2-ES1", group: "G-C2-3", competency: "C2" },
+    { id: "S46", name: "Recognizing general trends (increasing, decreasing, no change)", type: "scope_item", status: "green", es: "C2-ES1", group: "G-C2-3", competency: "C2" },
+    { id: "S47", name: "Understanding what a data point or bar represents", type: "scope_item", status: "green", es: "C2-ES1", group: "G-C2-3", competency: "C2" },
+    { id: "S48", name: "Recognizing when data shows clear differences versus uncertain results", type: "scope_item", status: "green", es: "C2-ES1", group: "G-C2-3", competency: "C2" },
+    { id: "S49", name: "Apply evaluation skills within structured, scenario-based contexts", type: "scope_item", status: "green", es: "C2-ES1", group: "G-C2-3", competency: "C2" },
+    { id: "S50", name: "Assess whether evidence is relevant, credible, and sufficient", type: "scope_item", status: "green", es: "C2-ES1", group: "G-C2-4", competency: "C2" },
+    { id: "S51", name: "Recognize different types of evidence and when each is appropriate", type: "scope_item", status: "green", es: "C2-ES1", group: "G-C2-4", competency: "C2" },
+    { id: "S52", name: "Identify missing or underrepresented evidence", type: "scope_item", status: "green", es: "C2-ES1", group: "G-C2-4", competency: "C2" },
+    { id: "S53", name: "Using digital tools (including AI) to find or evaluate evidence", type: "scope_item", status: "magenta", es: "C2-ES1", group: "G-C2-6", competency: "C2" },
+    
+    // C2-ES2 Scope Items
+    { id: "S54", name: "Identify key assumptions the claim depends on", type: "scope_item", status: "green", es: "C2-ES2", group: "G-C2-2", competency: "C2" },
+    { id: "S55", name: "Identify gaps, unsupported assumptions, or overgeneralizations in the reasoning", type: "scope_item", status: "green", es: "C2-ES2", group: "G-C2-2", competency: "C2" },
+    { id: "S56", name: "Recognize when evidence shows an association or trend rather than cause-effect", type: "scope_item", status: "green", es: "C2-ES2", group: "G-C2-2", competency: "C2" },
+    { id: "S57", name: "Recognizing spurious correlations", type: "scope_item", status: "cyan", es: "C2-ES2", group: "G-C2-2", competency: "C2" },
+    { id: "S58", name: "Identify bias, misinformation, or misleading representations", type: "scope_item", status: "green", es: "C2-ES2", group: "G-C2-5", competency: "C2" },
+    { id: "S59", name: "Evaluate credibility and limitations of sources at an introductory level", type: "scope_item", status: "green", es: "C2-ES2", group: "G-C2-5", competency: "C2" },
+    { id: "S60", name: "Identify cherry-picked data or evidence that ignores contradictory findings", type: "scope_item", status: "green", es: "C2-ES2", group: "G-C2-5", competency: "C2" },
+    { id: "S61", name: "Recognize emotional appeals and false urgency used to persuade", type: "scope_item", status: "cyan", es: "C2-ES2", group: "G-C2-5", competency: "C2" },
+    { id: "S62", name: "Identify absolute claims that oversimplify complex evidence", type: "scope_item", status: "green", es: "C2-ES2", group: "G-C2-5", competency: "C2" },
+    { id: "S63", name: "Understanding potential biases in tech-generated responses or datasets", type: "scope_item", status: "cyan", es: "C2-ES2", group: "G-C2-6", competency: "C2" },
+    
+    // C2-ES3 Scope Items
+    { id: "S64", name: "Identify missing scientific, societal, or ethical considerations", type: "scope_item", status: "green", es: "C2-ES3", group: "G-C2-1", competency: "C2" },
+    { id: "S65", name: "Consider whether the evidence applies to the population, setting, or context", type: "scope_item", status: "green", es: "C2-ES3", group: "G-C2-4", competency: "C2" },
+    
+    // C3-ES1 Scope Items
+    { id: "S66", name: "Define systems, components, and boundaries", type: "scope_item", status: "green", es: "C3-ES1", group: "G-C3-1", competency: "C3" },
+    { id: "S67", name: "Identify what is included in the system vs. outside it", type: "scope_item", status: "green", es: "C3-ES1", group: "G-C3-1", competency: "C3" },
+    { id: "S68", name: "Identify key components and their roles in the system", type: "scope_item", status: "green", es: "C3-ES1", group: "G-C3-1", competency: "C3" },
+    
+    // C3-ES2 Scope Items
+    { id: "S69", name: "Identify interactions, feedback loops, and patterns", type: "scope_item", status: "green", es: "C3-ES2", group: "G-C3-1", competency: "C3" },
+    { id: "S70", name: "Describe how components influence one another", type: "scope_item", status: "green", es: "C3-ES2", group: "G-C3-1", competency: "C3" },
+    { id: "S71", name: "Recognize feedback loops in plain language (reinforcing or balancing)", type: "scope_item", status: "green", es: "C3-ES2", group: "G-C3-1", competency: "C3" },
+    { id: "S72", name: "Explain the value of a systems perspective", type: "scope_item", status: "magenta", es: "C3-ES2", group: "G-C3-1", competency: "C3" },
+    { id: "S73", name: "Communicate system understanding clearly", type: "scope_item", status: "green", es: "C3-ES2", group: "G-C3-1", competency: "C3" },
+    { id: "S74", name: "Use simple visuals (e.g., labeled diagram, arrows showing influence)", type: "scope_item", status: "magenta", es: "C3-ES2", group: "G-C3-1", competency: "C3" },
+    { id: "S75", name: "Connect foundational scientific concepts to system behavior", type: "scope_item", status: "green", es: "C3-ES2", group: "G-C3-2", competency: "C3" },
+    { id: "S76", name: "Ask scientific questions about system behavior", type: "scope_item", status: "cyan", es: "C3-ES2", group: "G-C3-2", competency: "C3" },
+    { id: "S77", name: "Explain how changes in one part influence other components over time", type: "scope_item", status: "green", es: "C3-ES2", group: "G-C3-2", competency: "C3" },
+    { id: "S78", name: "Trace how a change moves through the system step-by-step", type: "scope_item", status: "green", es: "C3-ES2", group: "G-C3-2", competency: "C3" },
+    { id: "S79", name: "Describe how feedback loops may amplify or reduce the effects", type: "scope_item", status: "green", es: "C3-ES2", group: "G-C3-2", competency: "C3" },
+    { id: "S80", name: "Explain ripple effects across connected components", type: "scope_item", status: "green", es: "C3-ES2", group: "G-C3-2", competency: "C3" },
+    
+    // C3-ES3 Scope Items
+    { id: "S81", name: "Identify patterns or recurring behaviors in the system", type: "scope_item", status: "green", es: "C3-ES3", group: "G-C3-1", competency: "C3" },
+    { id: "S82", name: "Explain why single-cause explanations can be incomplete", type: "scope_item", status: "green", es: "C3-ES3", group: "G-C3-1", competency: "C3" },
+    { id: "S83", name: "Use concepts like cycles, energy flow, or change over time when relevant", type: "scope_item", status: "green", es: "C3-ES3", group: "G-C3-2", competency: "C3" },
+    { id: "S84", name: "Explain how the concept helps interpret what is happening in the system", type: "scope_item", status: "green", es: "C3-ES3", group: "G-C3-2", competency: "C3" },
+    { id: "S85", name: "Ask why outcomes may differ across contexts or conditions", type: "scope_item", status: "cyan", es: "C3-ES3", group: "G-C3-2", competency: "C3" },
+    { id: "S86", name: "Describe outcomes based on interactions among system components", type: "scope_item", status: "green", es: "C3-ES3", group: "G-C3-2", competency: "C3" },
+    
+    // C3-ES4 Scope Items
+    { id: "S87", name: "Explain intended and unintended impacts of changes within a system", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-2", competency: "C3" },
+    { id: "S88", name: "Identify intended outcomes of a decision or change", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-2", competency: "C3" },
+    { id: "S89", name: "Identify unintended consequences or trade-offs", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-2", competency: "C3" },
+    { id: "S90", name: "Consider cultural, societal, and ethical perspectives in systems analysis", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
+    { id: "S91", name: "Identify how human choices influence system behavior", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
+    { id: "S92", name: "Consider how beliefs, incentives, or norms shape decisions", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
+    { id: "S93", name: "Acknowledge trade-offs and value-based considerations", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
+    { id: "S94", name: "Identify benefits and costs connected to decisions in the system", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
+    { id: "S95", name: "Explain why stakeholders may prioritize different outcomes", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
+    { id: "S96", name: "Recognize how societies, cultures, and governments function within systems", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
+    { id: "S97", name: "Consider how impacts differ across groups or perspectives", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
+    { id: "S98", name: "Recognize human-centered biases in systems analysis", type: "scope_item", status: "cyan", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
+    { id: "S99", name: "Reflect on how perspective influences interpretation and communication", type: "scope_item", status: "cyan", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
+    { id: "S100", name: "Communicate explanations in a clear, fair way across viewpoints", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
+];
+
+// Build links
+const links = [];
+
+// Competency -> ES links
+nodes.filter(n => n.type === 'evidence_statement').forEach(es => {
+    links.push({ source: es.competency, target: es.id });
+});
+
+// ES -> Group links (via scope items)
+const esGroupPairs = new Set();
+nodes.filter(n => n.type === 'scope_item').forEach(s => {
+    const key = `${s.es}-${s.group}`;
+    if (!esGroupPairs.has(key)) {
+        esGroupPairs.add(key);
+        links.push({ source: s.es, target: s.group });
+    }
+});
+
+// Group -> Scope Item links
+nodes.filter(n => n.type === 'scope_item').forEach(s => {
+    links.push({ source: s.group, target: s.id });
+});
+
+// ===== SETUP =====
+const colors = { competency: "#ff6b6b", evidence_statement: "#4ecdc4", group: "#a78bfa", scope_item: "#6bcb77" };
+const statusColors = { green: "#00ff00", magenta: "#ff00ff", cyan: "#00ffff" };
+const sizes = { competency: 28, evidence_statement: 18, group: 14, scope_item: 6 };
+const typeLabels = { competency: "Competency", evidence_statement: "Evidence Statement", group: "Group", scope_item: "Scope Item" };
+
+// Connection map
+const connectionMap = {};
+nodes.forEach(n => connectionMap[n.id] = []);
+links.forEach(l => {
+    const s = typeof l.source === 'object' ? l.source.id : l.source;
+    const t = typeof l.target === 'object' ? l.target.id : l.target;
+    if (!connectionMap[s].includes(t)) connectionMap[s].push(t);
+    if (!connectionMap[t].includes(s)) connectionMap[t].push(s);
+});
+
+// Get all connected nodes (for filtering)
+function getAllConnected(nodeIds) {
+    const connected = new Set(nodeIds);
+    let prevSize = 0;
+    while (connected.size !== prevSize) {
+        prevSize = connected.size;
+        connected.forEach(id => {
+            connectionMap[id]?.forEach(connId => connected.add(connId));
+        });
+    }
+    return connected;
+}
+
+// Get directly connected
+function getDirectlyConnected(nodeId) {
+    const connected = new Set([nodeId]);
+    connectionMap[nodeId]?.forEach(id => connected.add(id));
+    return connected;
+}
+
+// Get connected subtree: clicked node + all ancestors (up) + all descendants (down)
+const typeRank = { competency: 0, evidence_statement: 1, group: 2, scope_item: 3 };
+function getConnectedSubtree(nodeId) {
+    const startNode = nodes.find(n => n.id === nodeId);
+    if (!startNode) return new Set([nodeId]);
+    const startRank = typeRank[startNode.type] ?? 2;
+    const connected = new Set([nodeId]);
+    
+    // Walk DOWN the hierarchy (to children, grandchildren, etc.)
+    function walkDown(id) {
+        const n = nodes.find(x => x.id === id);
+        const nRank = n ? (typeRank[n.type] ?? 2) : 2;
+        connectionMap[id]?.forEach(connId => {
+            if (connected.has(connId)) return;
+            const cn = nodes.find(x => x.id === connId);
+            const cRank = cn ? (typeRank[cn.type] ?? 2) : 2;
+            if (cRank > nRank) { // only go to lower-level (child) nodes
+                connected.add(connId);
+                walkDown(connId);
+            }
+        });
+    }
+    walkDown(nodeId);
+    
+    // Walk UP the hierarchy (to parents, grandparents)
+    function walkUp(id) {
+        const n = nodes.find(x => x.id === id);
+        const nRank = n ? (typeRank[n.type] ?? 2) : 2;
+        connectionMap[id]?.forEach(connId => {
+            if (connected.has(connId)) return;
+            const cn = nodes.find(x => x.id === connId);
+            const cRank = cn ? (typeRank[cn.type] ?? 2) : 2;
+            if (cRank < nRank) { // only go to higher-level (parent) nodes
+                connected.add(connId);
+                walkUp(connId);
+            }
+        });
+    }
+    walkUp(nodeId);
+    
+    return connected;
+}
+
+// ===== FILTERING =====
+// ===== MULTI-SELECT COMPONENT =====
+function createMultiSelect(containerId, options, allLabel, onChange) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    const selected = new Set();
+    
+    const btn = document.createElement('div');
+    btn.className = 'multi-select-btn';
+    btn.textContent = allLabel;
+    
+    const dropdown = document.createElement('div');
+    dropdown.className = 'multi-select-dropdown';
+    
+    // "All" option
+    const allOpt = document.createElement('div');
+    allOpt.className = 'multi-select-option select-all';
+    allOpt.innerHTML = `<input type="checkbox" checked> ${allLabel}`;
+    allOpt.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selected.clear();
+        dropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+        allOpt.querySelector('input').checked = true;
+        updateBtnLabel();
+        onChange(getSelectedValues());
+    });
+    dropdown.appendChild(allOpt);
+    
+    options.forEach(opt => {
+        const el = document.createElement('div');
+        el.className = 'multi-select-option';
+        el.innerHTML = `<input type="checkbox" value="${opt.value}"> ${opt.label}`;
+        el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const cb = el.querySelector('input');
+            cb.checked = !cb.checked;
+            if (cb.checked) {
+                selected.add(opt.value);
+            } else {
+                selected.delete(opt.value);
+            }
+            // Uncheck "all" if something is selected, check "all" if nothing selected
+            allOpt.querySelector('input').checked = selected.size === 0;
+            updateBtnLabel();
+            onChange(getSelectedValues());
+        });
+        dropdown.appendChild(el);
+    });
+    
+    function getSelectedValues() {
+        return selected.size === 0 ? ['all'] : [...selected];
+    }
+    
+    function updateBtnLabel() {
+        if (selected.size === 0) {
+            btn.innerHTML = allLabel;
+        } else if (selected.size === 1) {
+            const opt = options.find(o => o.value === [...selected][0]);
+            btn.innerHTML = `${opt ? opt.label : [...selected][0]}`;
+        } else {
+            btn.innerHTML = `${selected.size} selected <span class="multi-select-count">${selected.size}</span>`;
+        }
+    }
+    
+    btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        // Close all other dropdowns first
+        document.querySelectorAll('.multi-select-dropdown.open').forEach(d => {
+            if (d !== dropdown) d.classList.remove('open');
+        });
+        document.querySelectorAll('.multi-select-btn.active').forEach(b => {
+            if (b !== btn) b.classList.remove('active');
+        });
+        dropdown.classList.toggle('open');
+        btn.classList.toggle('active');
+    });
+    
+    container.appendChild(btn);
+    container.appendChild(dropdown);
+    
+    // Store reset function
+    container._reset = function() {
+        selected.clear();
+        dropdown.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+        allOpt.querySelector('input').checked = true;
+        updateBtnLabel();
+    };
+    
+    container._getValues = getSelectedValues;
+    
+    // Gray out unavailable options (but don't prevent selection)
+    container._setAvailable = function(availableValues) {
+        dropdown.querySelectorAll('.multi-select-option:not(.select-all)').forEach(el => {
+            const cb = el.querySelector('input[type="checkbox"]');
+            if (!cb) return;
+            const val = cb.value;
+            if (availableValues === null || availableValues.has(val)) {
+                el.classList.remove('unavailable');
+            } else {
+                el.classList.add('unavailable');
+            }
+        });
+    };
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', () => {
+    document.querySelectorAll('.multi-select-dropdown.open').forEach(d => d.classList.remove('open'));
+    document.querySelectorAll('.multi-select-btn.active').forEach(b => b.classList.remove('active'));
+});
+
+// ===== FILTERING =====
+function getFilters(prefix) {
+    const p = prefix ? prefix + '-' : '';
+    
+    // Get multi-select values for ES and Group
+    const esContainer = document.getElementById(p + 'es-multiselect');
+    const groupContainer = document.getElementById(p + 'group-multiselect');
+    
+    return {
+        comp: document.getElementById(p + 'comp-filter')?.value || 'all',
+        es: esContainer?._getValues ? esContainer._getValues() : ['all'],
+        group: groupContainer?._getValues ? groupContainer._getValues() : ['all'],
+        status: document.getElementById(p + 'status-filter')?.value || 'all',
+        type: document.getElementById(p + 'type-filter')?.value || 'all'
+    };
+}
+
+function getVisibleNodes(filters) {
+    const esAll = filters.es.includes('all');
+    const groupAll = filters.group.includes('all');
+    
+    // If no filters active, show all
+    if (filters.comp === 'all' && esAll && groupAll && filters.status === 'all' && filters.type === 'all') {
+        return nodes;
+    }
+    
+    // Start by finding the "anchor" nodes that directly match the filter
+    let anchorIds = new Set();
+    
+    // If a specific filter is set, that becomes our anchor
+    if (filters.comp !== 'all') anchorIds.add(filters.comp);
+    if (!esAll) filters.es.forEach(id => anchorIds.add(id));
+    if (!groupAll) filters.group.forEach(id => anchorIds.add(id));
+    
+    // If status filter, find all scope items with that status as anchors
+    if (filters.status !== 'all') {
+        nodes.filter(n => n.type === 'scope_item' && n.status === filters.status).forEach(n => anchorIds.add(n.id));
+    }
+    
+    // If type filter only, find all nodes of that type as anchors
+    if (filters.type !== 'all' && anchorIds.size === 0) {
+        nodes.filter(n => n.type === filters.type).forEach(n => anchorIds.add(n.id));
+    }
+    
+    // Now expand from anchors to get ALL connected nodes (up and down the hierarchy)
+    const visible = new Set();
+    
+    function addWithConnections(nodeId) {
+        if (visible.has(nodeId)) return;
+        visible.add(nodeId);
+        
+        const node = nodes.find(n => n.id === nodeId);
+        if (!node) return;
+        
+        // Add parents (going UP the hierarchy)
+        if (node.competency) {
+            visible.add(node.competency);
+        }
+        if (node.es) {
+            visible.add(node.es);
+            const esNode = nodes.find(n => n.id === node.es);
+            if (esNode?.competency) visible.add(esNode.competency);
+        }
+        if (node.group) {
+            visible.add(node.group);
+        }
+        
+        // Add children (going DOWN the hierarchy)
+        if (node.type === 'competency') {
+            nodes.filter(n => n.type === 'evidence_statement' && n.competency === nodeId).forEach(es => {
+                visible.add(es.id);
+            });
+        }
+        
+        if (node.type === 'evidence_statement') {
+            nodes.filter(n => n.type === 'scope_item' && n.es === nodeId).forEach(s => {
+                visible.add(s.id);
+                if (s.group) visible.add(s.group);
+            });
+        }
+        
+        if (node.type === 'group') {
+            nodes.filter(n => n.type === 'scope_item' && n.group === nodeId).forEach(s => {
+                visible.add(s.id);
+                if (s.es) {
+                    visible.add(s.es);
+                    const esNode = nodes.find(n => n.id === s.es);
+                    if (esNode?.competency) visible.add(esNode.competency);
+                }
+            });
+        }
+    }
+    
+    // Process all anchor nodes
+    anchorIds.forEach(id => addWithConnections(id));
+    
+    // Apply additional filters to narrow down if multiple filters are set
+    let result = nodes.filter(n => visible.has(n.id));
+    
+    // If comp filter is set, only show nodes connected to that competency
+    if (filters.comp !== 'all') {
+        result = result.filter(n => {
+            if (n.type === 'competency') return n.id === filters.comp;
+            if (n.competency) return n.competency === filters.comp;
+            if (n.type === 'group') {
+                return nodes.some(s => s.type === 'scope_item' && s.group === n.id && s.competency === filters.comp);
+            }
+            return true;
+        });
+    }
+    
+    // If ES filter is set (multi), only show nodes connected to selected ES
+    if (!esAll) {
+        const esSet = new Set(filters.es);
+        result = result.filter(n => {
+            if (n.type === 'evidence_statement') return esSet.has(n.id);
+            if (n.type === 'competency') {
+                return nodes.some(e => esSet.has(e.id) && e.competency === n.id);
+            }
+            if (n.es) return esSet.has(n.es);
+            if (n.type === 'group') {
+                return nodes.some(s => s.type === 'scope_item' && s.group === n.id && esSet.has(s.es));
+            }
+            return true;
+        });
+    }
+    
+    // If group filter is set (multi), only show nodes connected to selected groups
+    if (!groupAll) {
+        const groupSet = new Set(filters.group);
+        result = result.filter(n => {
+            if (n.type === 'group') return groupSet.has(n.id);
+            if (n.group) return groupSet.has(n.group);
+            if (n.type === 'evidence_statement') {
+                return nodes.some(s => s.type === 'scope_item' && s.es === n.id && groupSet.has(s.group));
+            }
+            if (n.type === 'competency') {
+                return nodes.some(s => s.type === 'scope_item' && s.competency === n.id && groupSet.has(s.group));
+            }
+            return true;
+        });
+    }
+    
+    // If status filter is set, filter scope items and keep their parents
+    if (filters.status !== 'all') {
+        const matchingScopeIds = new Set(result.filter(n => n.type === 'scope_item' && n.status === filters.status).map(n => n.id));
+        
+        result = result.filter(n => {
+            if (n.type === 'scope_item') return n.status === filters.status;
+            if (n.type === 'group') {
+                return nodes.some(s => matchingScopeIds.has(s.id) && s.group === n.id);
+            }
+            if (n.type === 'evidence_statement') {
+                return nodes.some(s => matchingScopeIds.has(s.id) && s.es === n.id);
+            }
+            if (n.type === 'competency') {
+                return nodes.some(s => matchingScopeIds.has(s.id) && s.competency === n.id);
+            }
+            return true;
+        });
+    }
+    
+    // If type filter is set, only show that type
+    if (filters.type !== 'all') {
+        result = result.filter(n => n.type === filters.type);
+    }
+    
+    return result;
+}
+
+function initDropdowns(prefix) {
+    const p = prefix ? prefix + '-' : '';
+    document.getElementById(p + 'comp-filter').innerHTML = '<option value="all">All Competencies</option>' + nodes.filter(n => n.type === 'competency').map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+    
+    const esOptions = nodes.filter(n => n.type === 'evidence_statement').map(e => ({ value: e.id, label: e.name }));
+    const groupOptions = nodes.filter(n => n.type === 'group').map(g => ({ value: g.id, label: g.name }));
+    
+    const onChange = prefix === 'graph' ? () => { applyGraphFilters(); updateFilterAvailability(prefix); } : () => { renderTree(); updateFilterAvailability(prefix); };
+    
+    createMultiSelect(p + 'es-multiselect', esOptions, 'All ES', onChange);
+    createMultiSelect(p + 'group-multiselect', groupOptions, 'All Groups', onChange);
+}
+
+// Determine which ES and Group options are available given current comp/ES/group selections
+function updateFilterAvailability(prefix) {
+    const p = prefix ? prefix + '-' : '';
+    const comp = document.getElementById(p + 'comp-filter')?.value || 'all';
+    const esContainer = document.getElementById(p + 'es-multiselect');
+    const groupContainer = document.getElementById(p + 'group-multiselect');
+    const esVals = esContainer?._getValues ? esContainer._getValues() : ['all'];
+    const groupVals = groupContainer?._getValues ? groupContainer._getValues() : ['all'];
+    const esAll = esVals.includes('all');
+    const groupAll = groupVals.includes('all');
+    
+    const scopeItems = nodes.filter(n => n.type === 'scope_item');
+    
+    // --- Which ES are available? Based on comp + group selections ---
+    let availableES = new Set();
+    scopeItems.forEach(s => {
+        const matchComp = comp === 'all' || s.competency === comp;
+        const matchGroup = groupAll || groupVals.includes(s.group);
+        if (matchComp && matchGroup) availableES.add(s.es);
+    });
+    
+    // --- Which Groups are available? Based on comp + ES selections ---
+    let availableGroups = new Set();
+    scopeItems.forEach(s => {
+        const matchComp = comp === 'all' || s.competency === comp;
+        const matchES = esAll || esVals.includes(s.es);
+        if (matchComp && matchES) availableGroups.add(s.group);
+    });
+    
+    // Apply availability to multi-selects
+    if (esContainer?._setAvailable) {
+        // If no other filters constrain ES, show all as available
+        const allAvailable = comp === 'all' && groupAll;
+        esContainer._setAvailable(allAvailable ? null : availableES);
+    }
+    if (groupContainer?._setAvailable) {
+        const allAvailable = comp === 'all' && esAll;
+        groupContainer._setAvailable(allAvailable ? null : availableGroups);
+    }
+}
+
+initDropdowns('graph');
+initDropdowns('');
+
+// ===== TABS =====
+document.querySelectorAll('.tab').forEach(tab => tab.addEventListener('click', function() {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    this.classList.add('active');
+    document.getElementById(this.dataset.tab + '-view').classList.add('active');
+}));
+
+// ===== D3 GRAPH =====
+const svg = d3.select("#graph");
+const width = window.innerWidth - 320;
+const height = window.innerHeight - 100;
+const g = svg.append("g");
+
+const zoom = d3.zoom().scaleExtent([0.1, 4]).on("zoom", e => g.attr("transform", e.transform));
+svg.call(zoom);
+
+const simulation = d3.forceSimulation(nodes)
+    .force("link", d3.forceLink(links).id(d => d.id).distance(d => {
+        const s = nodes.find(n => n.id === (d.source.id || d.source));
+        const t = nodes.find(n => n.id === (d.target.id || d.target));
+        if (s?.type === 'competency' || t?.type === 'competency') return 120;
+        if (s?.type === 'evidence_statement' || t?.type === 'evidence_statement') return 80;
+        return 50;
+    }))
+    .force("charge", d3.forceManyBody().strength(d => d.type === 'scope_item' ? -30 : -200))
+    .force("center", d3.forceCenter(width / 2, height / 2))
+    .force("collision", d3.forceCollide().radius(d => sizes[d.type] + 8));
+
+const link = g.append("g").selectAll("line").data(links).enter().append("line").attr("class", "link");
+
+const node = g.append("g").selectAll("g").data(nodes).enter().append("g").attr("class", "node")
+    .call(d3.drag()
+        .on("start", (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+        .on("drag", (e, d) => { d.fx = e.x; d.fy = e.y; })
+        .on("end", (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
+    );
+
+node.append("circle")
+    .attr("r", d => sizes[d.type])
+    .attr("fill", d => {
+        if (d.type === 'scope_item' && d.status) return statusColors[d.status];
+        return colors[d.type];
+    });
+
+node.each(function(d) {
+    if (d.type === 'scope_item') return; // No labels for scope items
+    const text = d3.select(this).append("text").attr("dy", sizes[d.type] + 10).attr("text-anchor", "middle");
+    const displayName = d.name;
+    text.text(displayName);
+});
+
+const tooltip = d3.select("#tooltip");
+node.on("mouseover", (e, d) => {
+    let html = `<strong>${d.name}</strong><br><span style="color:${d.type === 'scope_item' && d.status ? statusColors[d.status] : colors[d.type]}">${typeLabels[d.type]}</span>`;
+    if (d.description) html += `<br><small style="color:rgba(255,255,255,0.7)">${d.description}</small>`;
+    if (d.status) html += `<br><span style="color:${statusColors[d.status]}">● ${d.status.charAt(0).toUpperCase() + d.status.slice(1)}</span>`;
+    tooltip.html(html).style("left", (e.pageX + 10) + "px").style("top", (e.pageY - 10) + "px").classed("active", true);
+}).on("mouseout", () => tooltip.classed("active", false)).on("click", (e, d) => selectNode(d, e));
+
+simulation.on("tick", () => {
+    link.attr("x1", d => d.source.x).attr("y1", d => d.source.y).attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+    node.attr("transform", d => `translate(${d.x},${d.y})`);
+});
+
+function selectNode(d, e) {
+    node.classed("selected", false);
+    d3.select(e.currentTarget).classed("selected", true);
+    
+    const connected = getConnectedSubtree(d.id);
+    node.classed("dimmed", n => !connected.has(n.id));
+    link.classed("highlighted", l => connected.has(l.source.id || l.source) && connected.has(l.target.id || l.target))
+        .classed("dimmed", l => !connected.has(l.source.id || l.source) || !connected.has(l.target.id || l.target));
+    
+    // Update info box
+    document.getElementById("info-placeholder").style.display = "none";
+    document.getElementById("info-content").style.display = "block";
+    document.getElementById("info-name").textContent = d.name;
+    document.getElementById("info-desc").textContent = d.type === 'group' ? '' : (d.description || '');
+    document.getElementById("info-desc").style.display = d.type === 'group' ? 'none' : 'block';
+    const badge = document.getElementById("info-type-badge");
+    badge.textContent = typeLabels[d.type];
+    badge.className = "info-box-type-badge type-" + d.type;
+    
+    // Competency
+    const compRow = document.getElementById("row-comp");
+    if (d.competency || d.type === 'competency') {
+        compRow.style.display = "flex";
+        const compNode = nodes.find(n => n.id === (d.competency || d.id));
+        document.getElementById("info-comp").textContent = compNode?.name || '';
+    } else { compRow.style.display = "none"; }
+    
+    // ES
+    const esRow = document.getElementById("row-es");
+    if (d.es || d.type === 'evidence_statement') {
+        esRow.style.display = "flex";
+        const esNode = nodes.find(n => n.id === (d.es || d.id));
+        document.getElementById("info-es").textContent = esNode?.name || '';
+    } else { esRow.style.display = "none"; }
+    
+    // Group
+    const groupRow = document.getElementById("row-group");
+    if (d.group || d.type === 'group') {
+        groupRow.style.display = "flex";
+        const groupNode = nodes.find(n => n.id === (d.group || d.id));
+        document.getElementById("info-group").textContent = groupNode?.name || '';
+    } else { groupRow.style.display = "none"; }
+    
+    // Status
+    const statusRow = document.getElementById("row-status");
+    if (d.status) {
+        statusRow.style.display = "flex";
+        document.getElementById("info-status").innerHTML = `<span class="status-dot ${d.status}"></span>${d.status.charAt(0).toUpperCase() + d.status.slice(1)}`;
+    } else { statusRow.style.display = "none"; }
+    
+    // Focus (hide for groups - only show group name)
+    const focusRow = document.getElementById("row-focus");
+    if (d.focus && d.type !== 'group') {
+        focusRow.style.display = "flex";
+        document.getElementById("info-focus").textContent = d.focus;
+    } else { focusRow.style.display = "none"; }
+    
+    // Connections
+    const connNodes = connectionMap[d.id].map(c => nodes.find(n => n.id === c)).filter(n => n);
+    document.getElementById("info-connections").innerHTML = connNodes.map(cn => 
+        `<span class="tag" style="border-color:${cn.type === 'scope_item' && cn.status ? statusColors[cn.status] : colors[cn.type]}">${cn.name}</span>`
+    ).join('') ;
+}
+
+svg.on("click", e => {
+    if (e.target === svg.node()) {
+        node.classed("selected dimmed", false);
+        link.classed("highlighted dimmed", false);
+        document.getElementById("info-placeholder").style.display = "block";
+        document.getElementById("info-content").style.display = "none";
+    }
+});
+
+document.getElementById("zoom-in").onclick = () => svg.transition().call(zoom.scaleBy, 1.3);
+document.getElementById("zoom-out").onclick = () => svg.transition().call(zoom.scaleBy, 0.7);
+document.getElementById("reset").onclick = () => { svg.transition().call(zoom.transform, d3.zoomIdentity); simulation.alpha(0.5).restart(); };
+
+setTimeout(() => svg.call(zoom.transform, d3.zoomIdentity.translate(width / 3, height / 4).scale(0.5)), 500);
+
+// ===== GRAPH FILTERING =====
+function applyGraphFilters() {
+    const filters = getFilters('graph');
+    const visibleNodes = getVisibleNodes(filters);
+    const visibleIds = new Set(visibleNodes.map(n => n.id));
+    
+    node.classed("filtered-out", d => !visibleIds.has(d.id));
+    link.classed("filtered-out", l => !visibleIds.has(l.source.id || l.source) || !visibleIds.has(l.target.id || l.target));
+    
+    // Refresh circle colors (picks up any status changes)
+    node.select("circle").attr("fill", d => {
+        if (d.type === 'scope_item') {
+            return statusColorsEnabled && d.status ? statusColors[d.status] : defaultScopeColor;
+        }
+        return colors[d.type];
+    });
+    
+    document.getElementById("graph-filter-count").innerHTML = `<strong>${visibleIds.size}</strong> nodes`;
+    
+    // Update legend counts
+    const counts = {};
+    visibleNodes.forEach(n => counts[n.type] = (counts[n.type] || 0) + 1);
+    Object.keys(colors).forEach(t => {
+        const el = document.getElementById('count-' + t);
+        if (el) el.textContent = counts[t] || 0;
+    });
+}
+
+['graph-comp-filter', 'graph-status-filter', 'graph-type-filter'].forEach(id => 
+    document.getElementById(id).addEventListener("change", () => { applyGraphFilters(); updateFilterAvailability('graph'); })
+);
+
+document.getElementById("graph-clear-filters").addEventListener("click", function() {
+    ['graph-comp-filter', 'graph-status-filter', 'graph-type-filter'].forEach(id => {
+        document.getElementById(id).selectedIndex = 0;
+    });
+    // Reset multi-selects
+    ['graph-es-multiselect', 'graph-group-multiselect'].forEach(id => {
+        document.getElementById(id)?._reset();
+    });
+    applyGraphFilters();
+    updateFilterAvailability('graph');
+    node.classed("selected dimmed", false);
+    link.classed("highlighted dimmed", false);
+    document.getElementById("info-placeholder").style.display = "block";
+    document.getElementById("info-content").style.display = "none";
+});
+
+document.querySelectorAll(".legend-item").forEach(item => item.addEventListener("click", function() {
+    const type = this.dataset.type;
+    if (!type) return;
+    const sel = document.getElementById("graph-type-filter");
+    sel.value = sel.value === type ? 'all' : type;
+    applyGraphFilters();
+}));
+
+// ===== STATUS COLOR TOGGLE =====
+let statusColorsEnabled = true;
+const defaultScopeColor = '#6bcb77'; // neutral green for all scope items when status off
+
+applyGraphFilters();
+
+document.getElementById("toggle-status-colors").addEventListener("click", function() {
+    statusColorsEnabled = !statusColorsEnabled;
+    this.innerHTML = statusColorsEnabled 
+        ? '<i data-lucide="palette" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;"></i>Status Colors: ON' 
+        : '<i data-lucide="palette" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;"></i>Status Colors: OFF';
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    this.classList.toggle('off', !statusColorsEnabled);
+    
+    // Update all scope item circle colors
+    node.select("circle").attr("fill", d => {
+        if (d.type === 'scope_item') {
+            return statusColorsEnabled && d.status ? statusColors[d.status] : defaultScopeColor;
+        }
+        return colors[d.type];
+    });
+    
+    // Toggle sidebar status legend
+    document.getElementById('sidebar-status-legend').style.display = statusColorsEnabled ? '' : 'none';
+    
+    // Also update card view if active
+    if (isCardView) renderCardView();
+    
+    // Also re-render tree view (Data Table tab)
+    renderTree();
+    
+    // Sync tree toggle button
+    const treeBtn = document.getElementById('toggle-status-colors-tree');
+    if (treeBtn) {
+        treeBtn.textContent = statusColorsEnabled ? 'Status Colors: ON' : 'Status Colors: OFF';
+        treeBtn.classList.toggle('off', !statusColorsEnabled);
+    }
+});
+
+// ===== CARD VIEW =====
+let isCardView = false;
+
+function renderCardView() {
+    const cardContainer = document.getElementById('card-view');
+    const filters = getFilters('graph');
+    const visibleNodes = getVisibleNodes(filters);
+    const visibleIds = new Set(visibleNodes.map(n => n.id));
+    
+    // Build hierarchy from visible nodes
+    const comps = visibleNodes.filter(n => n.type === 'competency');
+    
+    let html = '';
+    
+    if (comps.length === 0) {
+        html = '<div style="text-align:center;padding:60px;color:#888;font-size:1rem;">No items match the current filters</div>';
+        cardContainer.innerHTML = html;
+        return;
+    }
+    
+    comps.forEach(comp => {
+        const esForComp = visibleNodes.filter(n => n.type === 'evidence_statement' && n.competency === comp.id);
+        const totalScope = visibleNodes.filter(n => n.type === 'scope_item' && n.competency === comp.id).length;
+        
+        html += `<div class="card-comp-section">
+            <div class="card-comp-header">
+                <span>${comp.name}</span>
+                <span class="comp-badge">${esForComp.length} ES · ${totalScope} scope items</span>
+            </div>
+            <div class="card-comp-body">`;
+        
+        if (esForComp.length === 0) {
+            html += '<div style="padding:12px;color:#999;font-size:0.85rem;">No evidence statements match filters</div>';
+        }
+        
+        esForComp.forEach(es => {
+            const scopeForEs = visibleNodes.filter(n => n.type === 'scope_item' && n.es === es.id);
+            const groupIdsForEs = [...new Set(scopeForEs.map(s => s.group))];
+            const groupsForEs = groupIdsForEs.map(gid => visibleNodes.find(n => n.id === gid)).filter(Boolean);
+            
+            html += `<div class="card-es-section">
+                <div class="card-es-header" onclick="toggleCardEs(this)">
+                    <span class="es-toggle expanded">▶</span>
+                    <span>${es.name}</span>
+                    <span class="es-badge">${scopeForEs.length} items</span>
+                </div>
+                <div class="card-es-desc">${es.description || ''}</div>
+                <div class="card-es-body expanded">`;
+            
+            groupsForEs.forEach(group => {
+                const scopeForGroup = scopeForEs.filter(s => s.group === group.id);
+                
+                html += `<div class="card-group-section">
+                    <div class="card-group-header">${group.name} <span class="card-scope-count">(${scopeForGroup.length})</span></div>
+                    <div class="card-scope-grid">`;
+                
+                scopeForGroup.forEach(scope => {
+                    const statusClass = statusColorsEnabled ? `status-${scope.status}` : 'status-neutral';
+                    const statusLabel = statusColorsEnabled && scope.status ? 
+                        `<span class="scope-status ${scope.status}">${{green:'ES Ready', magenta:'LO Only', cyan:'Formative'}[scope.status]}</span>` : '';
+                    
+                    html += `<div class="card-scope-item ${statusClass}">
+                        ${scope.name}${statusLabel}
+                    </div>`;
+                });
+                
+                html += `</div></div>`;
+            });
+            
+            html += `</div></div>`;
+        });
+        
+        html += `</div></div>`;
+    });
+    
+    cardContainer.innerHTML = html;
+}
+
+function toggleCardEs(header) {
+    const toggle = header.querySelector('.es-toggle');
+    const body = header.parentElement.querySelector('.card-es-body');
+    toggle.classList.toggle('expanded');
+    body.classList.toggle('expanded');
+}
+
+document.getElementById("toggle-card-view").addEventListener("click", function() {
+    isCardView = !isCardView;
+    const svgEl = document.getElementById('graph');
+    const controlsEl = document.getElementById('graph-controls');
+    const tooltipEl = document.getElementById('tooltip');
+    const cardView = document.getElementById('card-view');
+    
+    if (isCardView) {
+        svgEl.style.display = 'none';
+        controlsEl.style.display = 'none';
+        tooltipEl.style.display = 'none';
+        cardView.classList.add('active');
+        this.innerHTML = '<i data-lucide="git-branch" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;"></i>Graph View';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        this.classList.add('active');
+        renderCardView();
+    } else {
+        svgEl.style.display = '';
+        controlsEl.style.display = '';
+        tooltipEl.style.display = '';
+        cardView.classList.remove('active');
+        this.innerHTML = '<i data-lucide="layout-grid" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;"></i>Card View';
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        this.classList.remove('active');
+    }
+});
+
+// Update card view when filters change
+const origApplyGraphFilters = applyGraphFilters;
+applyGraphFilters = function() {
+    origApplyGraphFilters();
+    if (isCardView) renderCardView();
+};
+
+// ===== HIERARCHICAL TREE VIEW =====
+function buildHierarchy(filters) {
+    const hierarchy = [];
+    const esAll = filters.es.includes('all');
+    const groupAll = filters.group.includes('all');
+    const esSet = new Set(filters.es);
+    const groupSet = new Set(filters.group);
+    
+    // Get filtered competencies
+    let comps = nodes.filter(n => n.type === 'competency');
+    if (filters.comp !== 'all') {
+        comps = comps.filter(c => c.id === filters.comp);
+    }
+    
+    comps.forEach(comp => {
+        const compNode = {
+            ...comp,
+            level: 'competency',
+            children: []
+        };
+        
+        // Get ES for this competency
+        let esList = nodes.filter(n => n.type === 'evidence_statement' && n.competency === comp.id);
+        if (!esAll) {
+            esList = esList.filter(e => esSet.has(e.id));
+        }
+        
+        esList.forEach(es => {
+            const esNode = {
+                ...es,
+                level: 'es',
+                children: []
+            };
+            
+            // Get scope items for this ES
+            let scopeItems = nodes.filter(n => n.type === 'scope_item' && n.es === es.id);
+            
+            // Apply status filter
+            if (filters.status !== 'all') {
+                scopeItems = scopeItems.filter(s => s.status === filters.status);
+            }
+            
+            // Group scope items by their group
+            const groupIds = [...new Set(scopeItems.map(s => s.group))];
+            
+            // Apply group filter (multi)
+            let filteredGroupIds = groupIds;
+            if (!groupAll) {
+                filteredGroupIds = groupIds.filter(g => groupSet.has(g));
+            }
+            
+            filteredGroupIds.forEach(groupId => {
+                const group = nodes.find(n => n.id === groupId);
+                if (!group) return;
+                
+                const groupNode = {
+                    ...group,
+                    level: 'group',
+                    children: []
+                };
+                
+                // Get scope items for this group under this ES
+                let groupScopeItems = scopeItems.filter(s => s.group === groupId);
+                
+                groupScopeItems.forEach(scope => {
+                    groupNode.children.push({
+                        ...scope,
+                        level: 'scope'
+                    });
+                });
+                
+                if (groupNode.children.length > 0) {
+                    esNode.children.push(groupNode);
+                }
+            });
+            
+            if (esNode.children.length > 0 || !esAll) {
+                compNode.children.push(esNode);
+            }
+        });
+        
+        if (compNode.children.length > 0 || filters.comp !== 'all') {
+            hierarchy.push(compNode);
+        }
+    });
+    
+    return hierarchy;
+}
+
+function renderTreeNode(node, expanded = true) {
+    const hasChildren = node.children && node.children.length > 0;
+    const statusClass = (node.status && statusColorsEnabled) ? `status-${node.status}` : '';
+    const expandedClass = expanded ? 'expanded' : '';
+    
+    let countBadge = '';
+    if (hasChildren) {
+        const totalScope = countScopeItems(node);
+        countBadge = `<span class="count-badge">${totalScope} items</span>`;
+    }
+    
+    let statusBadge = '';
+    if (node.status && statusColorsEnabled) {
+        const statusLabels = { green: 'ES Ready', magenta: 'LO Only', cyan: 'Formative' };
+        statusBadge = `<span class="status-badge ${node.status}">${statusLabels[node.status]}</span>`;
+    }
+    
+    let typeLabel = '';
+    if (node.level === 'competency') typeLabel = 'Competency';
+    else if (node.level === 'es') typeLabel = 'Evidence Statement';
+    else if (node.level === 'group') typeLabel = 'Group';
+    
+    let focusHtml = '';
+    if (node.focus) {
+        focusHtml = `<div class="tree-focus">Focus: ${node.focus}</div>`;
+    }
+    
+    // Build note button for scope items
+    let noteBtn = '';
+    let noteRow = '';
+    if (node.level === 'scope') {
+        const noteKey = node.id;
+        const existingNote = meetingNotes[noteKey] || '';
+        const hasNote = existingNote ? 'has-note' : '';
+        const canEdit = typeof isAdmin === 'function' && isAdmin();
+        noteBtn = `<button class="tree-note-btn ${hasNote}" onclick="event.stopPropagation(); toggleTreeNote('${node.id}', this)" title="${existingNote ? 'View discussion notes' : 'Add discussion notes'}">📝</button>`;
+        noteRow = `<div class="tree-note-row" id="tree-note-row-${node.id}" onclick="event.stopPropagation()">
+            ${canEdit 
+                ? `<textarea class="tree-note-textarea" placeholder="Add discussion notes... (e.g., stakeholder feedback, decisions)" onchange="saveTreeNote('${node.id}', this)">${existingNote}</textarea>`
+                : (existingNote ? `<div class="tree-note-readonly">${existingNote}</div>` : `<div class="tree-note-readonly" style="color:#bbb;font-style:italic;">No notes yet</div>`)
+            }
+        </div>`;
+    }
+    
+    let html = `
+        <div class="tree-node level-${node.level} ${statusClass}" data-id="${node.id}">
+            <div class="tree-node-header" onclick="toggleTreeNode(this)">
+                <span class="tree-toggle ${hasChildren ? expandedClass : 'no-children'}">▶</span>
+                <div class="tree-content">
+                    <div class="tree-title">
+                        ${typeLabel ? `<span class="type-badge">${typeLabel}</span>` : ''}
+                        ${node.name}
+                        ${countBadge}
+                        ${statusBadge}
+                    </div>
+                    ${(node.description && node.level !== 'group') ? `<div class="tree-description">${node.description}</div>` : ''}
+                    ${(node.level !== 'group') ? focusHtml : ''}
+                </div>
+                ${noteBtn}
+            </div>
+            ${noteRow}`;
+    
+    if (hasChildren) {
+        html += `<div class="tree-children ${expandedClass}">`;
+        node.children.forEach(child => {
+            html += renderTreeNode(child, expanded);
+        });
+        html += `</div>`;
+    }
+    
+    html += `</div>`;
+    return html;
+}
+
+function countScopeItems(node) {
+    if (node.level === 'scope') return 1;
+    if (!node.children) return 0;
+    return node.children.reduce((sum, child) => sum + countScopeItems(child), 0);
+}
+
+function toggleTreeNode(header) {
+    const toggle = header.querySelector('.tree-toggle');
+    const children = header.nextElementSibling;
+    
+    if (toggle.classList.contains('no-children')) return;
+    
+    toggle.classList.toggle('expanded');
+    if (children) {
+        children.classList.toggle('expanded');
+    }
+}
+
+function expandAll() {
+    document.querySelectorAll('.tree-toggle:not(.no-children)').forEach(t => t.classList.add('expanded'));
+    document.querySelectorAll('.tree-children').forEach(c => c.classList.add('expanded'));
+}
+
+function collapseAll() {
+    document.querySelectorAll('.tree-toggle').forEach(t => t.classList.remove('expanded'));
+    document.querySelectorAll('.tree-children').forEach(c => c.classList.remove('expanded'));
+}
+
+function renderTree() {
+    const filters = getFilters('');
+    const hierarchy = buildHierarchy(filters);
+    
+    const container = document.getElementById('tree-container');
+    
+    if (hierarchy.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:40px;color:#666;">No items match the current filters</div>';
+        return;
+    }
+    
+    let html = '';
+    hierarchy.forEach(node => {
+        html += renderTreeNode(node, true);
+    });
+    container.innerHTML = html;
+    
+    // Update stats
+    let totalComp = 0, totalES = 0, totalGroup = 0, totalScope = 0;
+    let greenCount = 0, magentaCount = 0, cyanCount = 0;
+    
+    function countNodes(node) {
+        if (node.level === 'competency') totalComp++;
+        if (node.level === 'es') totalES++;
+        if (node.level === 'group') totalGroup++;
+        if (node.level === 'scope') {
+            totalScope++;
+            if (node.status === 'green') greenCount++;
+            if (node.status === 'magenta') magentaCount++;
+            if (node.status === 'cyan') cyanCount++;
+        }
+        if (node.children) node.children.forEach(countNodes);
+    }
+    hierarchy.forEach(countNodes);
+    
+    document.getElementById('stats-bar').innerHTML = `
+        <span class="stat-item"><span class="count">${totalComp}</span> <span class="label">Competencies</span></span>
+        <span class="stat-item"><span class="count">${totalES}</span> <span class="label">Evidence Statements</span></span>
+        <span class="stat-item"><span class="count">${totalGroup}</span> <span class="label">Groups</span></span>
+        <span class="stat-item"><span class="count">${totalScope}</span> <span class="label">Scope Items</span></span>
+        ${statusColorsEnabled ? `<span style="margin-left:auto;display:flex;gap:12px;">
+            <span class="stat-item"><span class="count" style="color:#27ae60">${greenCount}</span> <span class="label">🟢 Green</span></span>
+            <span class="stat-item"><span class="count" style="color:#8e44ad">${magentaCount}</span> <span class="label">🟣 Magenta</span></span>
+            <span class="stat-item"><span class="count" style="color:#00838f">${cyanCount}</span> <span class="label">🔵 Cyan</span></span>
+        </span>` : ''}
+    `;
+}
+
+// Event listeners for tree view
+['comp-filter', 'status-filter'].forEach(id => 
+    document.getElementById(id).addEventListener("change", () => { renderTree(); updateFilterAvailability(''); if (typeof lucide !== 'undefined') lucide.createIcons(); })
+);
+
+document.getElementById("clear-filters").addEventListener("click", () => {
+    ['comp-filter', 'status-filter'].forEach(id => 
+        document.getElementById(id).value = 'all'
+    );
+    // Reset multi-selects
+    ['es-multiselect', 'group-multiselect'].forEach(id => {
+        document.getElementById(id)?._reset();
+    });
+    renderTree();
+    updateFilterAvailability('');
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+});
+
+document.getElementById("expand-all").addEventListener("click", expandAll);
+document.getElementById("collapse-all").addEventListener("click", collapseAll);
+
+document.getElementById("toggle-status-colors-tree").addEventListener("click", function() {
+    statusColorsEnabled = !statusColorsEnabled;
+    this.textContent = statusColorsEnabled ? 'Status Colors: ON' : 'Status Colors: OFF';
+    this.classList.toggle('off', !statusColorsEnabled);
+    // Sync the graph toggle button too
+    const graphBtn = document.getElementById('toggle-status-colors');
+    if (graphBtn) {
+        graphBtn.innerHTML = statusColorsEnabled 
+            ? '<i data-lucide="palette" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;"></i>Status Colors: ON' 
+            : '<i data-lucide="palette" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;"></i>Status Colors: OFF';
+        graphBtn.classList.toggle('off', !statusColorsEnabled);
+    }
+    renderTree();
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+    applyGraphFilters();
+    document.getElementById('sidebar-status-legend').style.display = statusColorsEnabled ? '' : 'none';
+    if (typeof isCardView !== 'undefined' && isCardView && typeof renderCardView === 'function') renderCardView();
+});
+
+// Meeting notes + planner state (must be before renderTree)
+let meetingNotes = {};
+let plannerUser = null;
+const ADMIN_USER = 'Lynn';
+function isAdmin() { return plannerUser === ADMIN_USER; }
+
+// Initialize tree
+renderTree();
+if (typeof lucide !== 'undefined') lucide.createIcons();
+
+// ===== COURSE PLANNER =====
+// Shared state via Google Apps Script (like case study review)
+const PLANNER_API = ""; // ← Paste your deployed Apps Script URL here
+const PLANNER_COLORS = ['#C25178','#3A8FBF','#5E9E5E','#9B6EC5','#D4853A','#4A8F8F','#C4564A','#7B8EC2'];
+let plannerState = { checkedID: {}, checkedAD: {}, notes: {} }; // keyed by scopeId_reviewer
+let plannerReviewers = [];
+let plannerRColors = {};
+let plannerSaveT = null;
+
+function pGetColor(name) {
+    if (plannerRColors[name]) return plannerRColors[name];
+    plannerRColors[name] = PLANNER_COLORS[Object.keys(plannerRColors).length % PLANNER_COLORS.length];
+    return plannerRColors[name];
+}
+
+function pKey(scopeId, reviewer) { return scopeId + '_' + reviewer; }
+
+function pUpdateReviewers() {
+    const s = new Set();
+    Object.keys(plannerState.checkedID).forEach(k => { const p = k.indexOf('_'); if (p > -1) s.add(k.slice(p+1)); });
+    Object.keys(plannerState.checkedAD).forEach(k => { const p = k.indexOf('_'); if (p > -1) s.add(k.slice(p+1)); });
+    Object.keys(plannerState.notes).forEach(k => { const p = k.indexOf('_'); if (p > -1) s.add(k.slice(p+1)); });
+    if (plannerUser) s.add(plannerUser);
+    plannerReviewers = [...s].sort((a,b) => a === plannerUser ? -1 : b === plannerUser ? 1 : a.localeCompare(b));
+}
+
+function pSetSync(text, cls) {
+    const el = document.getElementById('planner-sync');
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'planner-sync ' + cls;
+    if (cls === 'saved') setTimeout(() => { el.textContent = ''; }, 3000);
+}
+
+function pLoadData() {
+    if (!PLANNER_API) {
+        // Fallback to localStorage if no API configured
+        try {
+            const saved = localStorage.getItem('es-planner-state-v3');
+            if (saved) {
+                const d = JSON.parse(saved);
+                plannerState = { checkedID: d.checkedID || {}, checkedAD: d.checkedAD || {}, notes: d.notes || {} };
+            }
+        } catch(e) {}
+        pUpdateReviewers();
+        renderPlanner(document.getElementById('planner-search')?.value || '');
+        return;
+    }
+    
+    pSetSync('Loading...', 'saving');
+    const cbName = 'planner_cb_' + Date.now();
+    
+    window[cbName] = function(data) {
+        try {
+            plannerState = { checkedID: {}, checkedAD: {}, notes: {} };
+            (data || []).forEach(row => {
+                if (!row.scopeId || !row.reviewer) return;
+                const key = pKey(row.scopeId, row.reviewer);
+                if (row.checkedID === 'true' || row.checkedID === true) plannerState.checkedID[key] = true;
+                if (row.checkedAD === 'true' || row.checkedAD === true) plannerState.checkedAD[key] = true;
+                if (row.notes) plannerState.notes[key] = row.notes;
+            });
+            pUpdateReviewers();
+            pSetSync('Synced', 'saved');
+        } catch(e) {
+            pSetSync('Load error', 'error');
+        }
+        renderPlanner(document.getElementById('planner-search')?.value || '');
+        delete window[cbName];
+        const el = document.getElementById(cbName);
+        if (el) el.remove();
+    };
+    
+    const s = document.createElement('script');
+    s.id = cbName;
+    s.src = PLANNER_API + '?action=load&callback=' + cbName;
+    s.onerror = function() {
+        pSetSync('Offline', 'error');
+        delete window[cbName];
+        s.remove();
+        pUpdateReviewers();
+        renderPlanner(document.getElementById('planner-search')?.value || '');
+    };
+    document.body.appendChild(s);
+}
+
+function pSaveItem(scopeId, checkedID, checkedAD, notes) {
+    if (!plannerUser) return;
+    
+    // Save to localStorage as fallback
+    try { localStorage.setItem('es-planner-state-v3', JSON.stringify(plannerState)); } catch(e) {}
+    
+    if (!PLANNER_API) return;
+    
+    pSetSync('Saving...', 'saving');
+    const cbName = 'psave_cb_' + Date.now();
+    const params = new URLSearchParams({
+        action: 'save',
+        scopeId: scopeId,
+        reviewer: plannerUser,
+        checkedID: checkedID ? 'true' : 'false',
+        checkedAD: checkedAD ? 'true' : 'false',
+        notes: notes || '',
+        callback: cbName
+    });
+    
+    window[cbName] = function() {
+        pSetSync('Saved ✓', 'saved');
+        delete window[cbName];
+        const el = document.getElementById(cbName);
+        if (el) el.remove();
+    };
+    
+    const s = document.createElement('script');
+    s.id = cbName;
+    s.src = PLANNER_API + '?' + params.toString();
+    s.onerror = function() {
+        pSetSync('Save failed', 'error');
+        delete window[cbName];
+        s.remove();
+    };
+    document.body.appendChild(s);
+}
+
+// ===== PLANNER LOGIN =====
+function plannerLoginGo() {
+    const n = document.getElementById('planner-login-input').value.trim();
+    if (n) plannerLogin(n);
+}
+
+function plannerLogin(name) {
+    plannerUser = name;
+    let past = JSON.parse(localStorage.getItem('plannerUsers') || '[]');
+    if (!past.includes(name)) past.push(name);
+    localStorage.setItem('plannerUsers', JSON.stringify(past));
+    localStorage.setItem('plannerCurrent', name);
+    
+    document.getElementById('planner-login-overlay').style.display = 'none';
+    const badge = document.getElementById('planner-user-badge');
+    badge.style.display = 'inline-flex';
+    badge.style.background = pGetColor(name);
+    document.getElementById('planner-user-av').textContent = name[0].toUpperCase();
+    document.getElementById('planner-user-name').textContent = name;
+    
+    // Show admin badge if Lynn
+    const adminBadge = document.getElementById('planner-admin-badge');
+    if (adminBadge) adminBadge.style.display = (name === 'Lynn') ? 'inline-flex' : 'none';
+    
+    // Show switch button for Lynn, logout button for others
+    document.getElementById('planner-switch-btn').style.display = (name === 'Lynn') ? '' : 'none';
+    document.getElementById('planner-logout-btn').style.display = (name !== 'Lynn') ? '' : 'none';
+    
+    pLoadData();
+}
+
+function plannerSwitchUser() {
+    // Only Lynn can switch between all users
+    if (plannerUser !== ADMIN_USER) return;
+    document.getElementById('planner-login-overlay').style.display = 'flex';
+    document.getElementById('planner-login-input').value = '';
+    plannerShowReturning();
+}
+
+function plannerLogout() {
+    const currentName = plannerUser;
+    plannerUser = null;
+    localStorage.removeItem('plannerCurrent');
+    document.getElementById('planner-user-badge').style.display = 'none';
+    document.getElementById('planner-admin-badge').style.display = 'none';
+    document.getElementById('planner-switch-btn').style.display = 'none';
+    document.getElementById('planner-logout-btn').style.display = 'none';
+    document.getElementById('planner-login-overlay').style.display = 'flex';
+    document.getElementById('planner-login-input').value = '';
+    // Show only their own name as a quick re-login option
+    const sec = document.getElementById('planner-returning');
+    const btns = document.getElementById('planner-returning-btns');
+    if (currentName) {
+        sec.style.display = 'block';
+        btns.innerHTML = '';
+        const b = document.createElement('button');
+        b.className = 'returning-btn';
+        b.innerHTML = `<span class="p-av" style="background:${pGetColor(currentName)}">${currentName[0].toUpperCase()}</span>${currentName}`;
+        b.onclick = () => plannerLogin(currentName);
+        btns.appendChild(b);
+    } else {
+        sec.style.display = 'none';
+    }
+    renderPlanner();
+}
+
+function plannerShowReturning() {
+    const past = JSON.parse(localStorage.getItem('plannerUsers') || '[]');
+    const all = new Set([...past, ...plannerReviewers]);
+    const sec = document.getElementById('planner-returning');
+    const btns = document.getElementById('planner-returning-btns');
+    if (!all.size) { sec.style.display = 'none'; return; }
+    
+    // Lynn sees all users; others only see themselves
+    const isLynnSwitching = plannerUser === ADMIN_USER || (!plannerUser && localStorage.getItem('plannerCurrent') === ADMIN_USER);
+    
+    sec.style.display = 'block';
+    btns.innerHTML = '';
+    
+    if (isLynnSwitching) {
+        // Admin: show all users
+        [...all].sort().forEach(n => {
+            const b = document.createElement('button');
+            b.className = 'returning-btn';
+            b.innerHTML = `<span class="p-av" style="background:${pGetColor(n)}">${n[0].toUpperCase()}</span>${n}`;
+            b.onclick = () => plannerLogin(n);
+            btns.appendChild(b);
+        });
+    } else {
+        // Non-admin: only show their own name if they were previously logged in
+        const prev = localStorage.getItem('plannerCurrent');
+        if (prev && prev !== ADMIN_USER) {
+            const b = document.createElement('button');
+            b.className = 'returning-btn';
+            b.innerHTML = `<span class="p-av" style="background:${pGetColor(prev)}">${prev[0].toUpperCase()}</span>${prev}`;
+            b.onclick = () => plannerLogin(prev);
+            btns.appendChild(b);
+        } else {
+            sec.style.display = 'none';
+        }
+    }
+}
+
+function renderPlanner(searchTerm = '') {
+    const container = document.getElementById('planner-main');
+    if (!plannerUser) {
+        container.innerHTML = '<div class="no-results" style="padding:60px;">Sign in above to start planning</div>';
+        return;
+    }
+    
+    const scopeItems = nodes.filter(n => n.type === 'scope_item');
+    const comps = nodes.filter(n => n.type === 'competency');
+    const search = searchTerm.toLowerCase().trim();
+    let matchCount = 0;
+    let totalItems = 0;
+    let checkedItems = 0;
+    
+    // Helper to get current user's state for a scope item
+    const isCheckedID = (sid) => plannerState.checkedID[pKey(sid, plannerUser)];
+    const isCheckedAD = (sid) => plannerState.checkedAD[pKey(sid, plannerUser)];
+    const isBothChecked = (sid) => isCheckedID(sid) && isCheckedAD(sid);
+    const getNote = (sid) => plannerState.notes[pKey(sid, plannerUser)] || '';
+    const getOtherNotes = (sid) => {
+        return plannerReviewers.filter(r => r !== plannerUser).map(r => ({
+            name: r,
+            color: pGetColor(r),
+            note: plannerState.notes[pKey(sid, r)] || '',
+            id: plannerState.checkedID[pKey(sid, r)],
+            ad: plannerState.checkedAD[pKey(sid, r)]
+        })).filter(x => x.note || x.id || x.ad);
+    };
+    
+    let html = '';
+    
+    comps.forEach(comp => {
+        const esForComp = nodes.filter(n => n.type === 'evidence_statement' && n.competency === comp.id);
+        const scopeForComp = scopeItems.filter(s => s.competency === comp.id);
+        const compChecked = scopeForComp.filter(s => isBothChecked(s.id)).length;
+        const compIDCount = scopeForComp.filter(s => isCheckedID(s.id)).length;
+        const compADCount = scopeForComp.filter(s => isCheckedAD(s.id)).length;
+        const compTotal = scopeForComp.length;
+        
+        let compHasMatch = !search;
+        if (search) {
+            compHasMatch = scopeForComp.some(s => s.name.toLowerCase().includes(search) || getNote(s.id).toLowerCase().includes(search));
+        }
+        if (!compHasMatch) return;
+        
+        html += `<div class="planner-comp-section">
+            <div class="planner-comp-header">
+                ${comp.name}
+                <span class="planner-comp-progress">ID: ${compIDCount}/${compTotal} · AD: ${compADCount}/${compTotal}</span>
+            </div>
+            <div class="planner-comp-body">`;
+        
+        esForComp.forEach(es => {
+            const scopeForEs = scopeItems.filter(s => s.es === es.id);
+            const esCheckedID = scopeForEs.filter(s => isCheckedID(s.id)).length;
+            const esCheckedAD = scopeForEs.filter(s => isCheckedAD(s.id)).length;
+            const groupIds = [...new Set(scopeForEs.map(s => s.group))];
+            
+            let esHasMatch = !search;
+            if (search) {
+                esHasMatch = scopeForEs.some(s => s.name.toLowerCase().includes(search) || getNote(s.id).toLowerCase().includes(search));
+            }
+            if (!esHasMatch) return;
+            
+            html += `<div class="planner-es-section">
+                <div class="planner-es-header" onclick="togglePlannerEs(this)">
+                    <span class="planner-es-toggle expanded">▶</span>
+                    ${es.name}: ${es.description || ''}
+                    <span class="planner-es-progress">ID ${esCheckedID}/${scopeForEs.length} · AD ${esCheckedAD}/${scopeForEs.length}</span>
+                </div>
+                <div class="planner-es-body expanded">`;
+            
+            groupIds.forEach(gid => {
+                const group = nodes.find(n => n.id === gid);
+                if (!group) return;
+                const scopeForGroup = scopeForEs.filter(s => s.group === gid);
+                
+                let groupHasMatch = !search;
+                if (search) {
+                    groupHasMatch = scopeForGroup.some(s => s.name.toLowerCase().includes(search) || getNote(s.id).toLowerCase().includes(search));
+                }
+                if (!groupHasMatch) return;
+                
+                html += `<div class="planner-group-label">${group.name}</div>`;
+                
+                scopeForGroup.forEach(scope => {
+                    totalItems++;
+                    if (isBothChecked(scope.id)) checkedItems++;
+                    
+                    const isMatch = search && (scope.name.toLowerCase().includes(search) || getNote(scope.id).toLowerCase().includes(search));
+                    if (search && !isMatch) return;
+                    if (isMatch) matchCount++;
+                    
+                    const idChecked = isCheckedID(scope.id) ? 'checked' : '';
+                    const adChecked = isCheckedAD(scope.id) ? 'checked' : '';
+                    const textClass = isBothChecked(scope.id) ? 'checked' : '';
+                    const myNote = getNote(scope.id);
+                    const hasNote = myNote ? 'has-note' : '';
+                    const noteOpen = myNote && search && myNote.toLowerCase().includes(search) ? 'open' : '';
+                    const highlightClass = isMatch ? 'search-highlight' : '';
+                    const statusBadge = statusColorsEnabled && scope.status ? 
+                        `<span class="planner-scope-status ${scope.status}">${{green:'ES Ready',magenta:'LO Only',cyan:'Formative'}[scope.status]}</span>` : '';
+                    
+                    // Admin status control (Lynn only)
+                    const adminControl = isAdmin() ? `<div class="planner-admin-status">
+                        <select onchange="changeStatus('${scope.id}', this.value)">
+                            <option value="green" ${scope.status === 'green' ? 'selected' : ''}>🟢 ES Ready</option>
+                            <option value="magenta" ${scope.status === 'magenta' ? 'selected' : ''}>🟣 LO Only</option>
+                            <option value="cyan" ${scope.status === 'cyan' ? 'selected' : ''}>🔵 Formative</option>
+                        </select>
+                    </div>` : '';
+                    
+                    // Other reviewers' notes
+                    const others = getOtherNotes(scope.id);
+                    let othersHtml = '';
+                    if (others.length) {
+                        othersHtml = '<div class="planner-others">' + others.map(o => {
+                            let parts = [];
+                            if (o.id) parts.push('ID ✓');
+                            if (o.ad) parts.push('AD ✓');
+                            if (o.note) parts.push(o.note);
+                            return `<div class="planner-other-note"><span class="p-av-tiny" style="background:${o.color}">${o.name[0].toUpperCase()}</span><span class="p-other-name">${o.name}:</span> ${parts.join(' · ')}</div>`;
+                        }).join('') + '</div>';
+                    }
+                    
+                    html += `<div class="planner-scope-row ${highlightClass}" data-scope-id="${scope.id}">
+                        <label class="planner-check-label id-label"><input type="checkbox" class="planner-scope-check" ${idChecked} onchange="togglePlannerCheck('${scope.id}', 'ID', this)"><span class="check-tag">ID</span></label>
+                        <label class="planner-check-label ad-label"><input type="checkbox" class="planner-scope-check" ${adChecked} onchange="togglePlannerCheck('${scope.id}', 'AD', this)"><span class="check-tag">AD</span></label>
+                        <span class="planner-scope-text ${textClass}">${scope.name}</span>
+                        ${statusBadge}${adminControl}
+                        <button class="planner-scope-note-btn ${hasNote}" onclick="togglePlannerNote('${scope.id}', this)" title="Add note">📝</button>
+                    </div>
+                    <div class="planner-scope-note-row ${noteOpen}" id="note-row-${scope.id}">
+                        <textarea class="planner-scope-note" placeholder="Add a note... (e.g., 'Covered in Module 3')" onchange="savePlannerNote('${scope.id}', this)">${myNote}</textarea>
+                        ${othersHtml}
+                    </div>`;
+                });
+            });
+            
+            html += `</div></div>`;
+        });
+        
+        html += `</div></div>`;
+    });
+    
+    if (!html) {
+        html = '<div class="no-results">No scope items match your search</div>';
+    }
+    
+    container.innerHTML = html;
+    
+    // Update progress
+    const allScope = scopeItems.length;
+    const allID = scopeItems.filter(s => isCheckedID(s.id)).length;
+    const allAD = scopeItems.filter(s => isCheckedAD(s.id)).length;
+    const allBoth = scopeItems.filter(s => isBothChecked(s.id)).length;
+    const pctID = allScope > 0 ? Math.round((allID / allScope) * 100) : 0;
+    const pctAD = allScope > 0 ? Math.round((allAD / allScope) * 100) : 0;
+    document.getElementById('planner-progress-text').textContent = `ID: ${allID}/${allScope} · AD: ${allAD}/${allScope}`;
+    document.getElementById('planner-progress-pct').textContent = `${pctID}% / ${pctAD}%`;
+    document.getElementById('planner-progress-fill').style.width = `${Math.round((pctID + pctAD) / 2)}%`;
+    
+    const countEl = document.getElementById('search-match-count');
+    countEl.textContent = search ? `${matchCount} match${matchCount !== 1 ? 'es' : ''}` : '';
+}
+
+function togglePlannerEs(header) {
+    header.querySelector('.planner-es-toggle').classList.toggle('expanded');
+    header.nextElementSibling.classList.toggle('expanded');
+}
+
+function togglePlannerCheck(scopeId, type, checkbox) {
+    const key = pKey(scopeId, plannerUser);
+    const stateObj = type === 'ID' ? plannerState.checkedID : plannerState.checkedAD;
+    
+    if (checkbox.checked) {
+        stateObj[key] = true;
+    } else {
+        delete stateObj[key];
+    }
+    
+    // Strikethrough text only when both are checked
+    const row = checkbox.closest('.planner-scope-row');
+    const textEl = row.querySelector('.planner-scope-text');
+    const bothChecked = plannerState.checkedID[key] && plannerState.checkedAD[key];
+    textEl.classList.toggle('checked', bothChecked);
+    
+    // Save to backend
+    pSaveItem(scopeId, !!plannerState.checkedID[key], !!plannerState.checkedAD[key], plannerState.notes[key] || '');
+    
+    // Update progress without full re-render
+    const allScope = nodes.filter(n => n.type === 'scope_item').length;
+    const allID = nodes.filter(n => n.type === 'scope_item' && plannerState.checkedID[pKey(n.id, plannerUser)]).length;
+    const allAD = nodes.filter(n => n.type === 'scope_item' && plannerState.checkedAD[pKey(n.id, plannerUser)]).length;
+    const pctID = Math.round((allID / allScope) * 100);
+    const pctAD = Math.round((allAD / allScope) * 100);
+    document.getElementById('planner-progress-text').textContent = `ID: ${allID}/${allScope} · AD: ${allAD}/${allScope}`;
+    document.getElementById('planner-progress-pct').textContent = `${pctID}% / ${pctAD}%`;
+    document.getElementById('planner-progress-fill').style.width = `${Math.round((pctID + pctAD) / 2)}%`;
+}
+
+function togglePlannerNote(scopeId, btn) {
+    const noteRow = document.getElementById('note-row-' + scopeId);
+    noteRow.classList.toggle('open');
+    if (noteRow.classList.contains('open')) {
+        noteRow.querySelector('textarea').focus();
+    }
+}
+
+function savePlannerNote(scopeId, textarea) {
+    const val = textarea.value.trim();
+    const key = pKey(scopeId, plannerUser);
+    if (val) {
+        plannerState.notes[key] = val;
+    } else {
+        delete plannerState.notes[key];
+    }
+    // Update note button appearance
+    const row = textarea.closest('.planner-scope-note-row').previousElementSibling;
+    const btn = row?.querySelector('.planner-scope-note-btn');
+    if (btn) btn.classList.toggle('has-note', !!val);
+    
+    // Debounced save
+    clearTimeout(plannerSaveT);
+    plannerSaveT = setTimeout(() => {
+        pSaveItem(scopeId, !!plannerState.checkedID[key], !!plannerState.checkedAD[key], val);
+    }, 800);
+}
+
+// Search
+let searchTimeout;
+document.getElementById('planner-search').addEventListener('input', function() {
+    clearTimeout(searchTimeout);
+    const val = this.value;
+    searchTimeout = setTimeout(() => renderPlanner(val), 200);
+});
+
+// Check all visible
+document.getElementById('planner-check-all').addEventListener('click', function() {
+    if (!plannerUser) return;
+    document.querySelectorAll('.planner-scope-row').forEach(row => {
+        const scopeId = row.dataset.scopeId;
+        const key = pKey(scopeId, plannerUser);
+        row.querySelectorAll('.planner-scope-check').forEach(cb => { cb.checked = true; });
+        plannerState.checkedID[key] = true;
+        plannerState.checkedAD[key] = true;
+        row.querySelector('.planner-scope-text').classList.add('checked');
+        pSaveItem(scopeId, true, true, plannerState.notes[key] || '');
+    });
+    renderPlanner(document.getElementById('planner-search').value);
+});
+
+// Uncheck all
+document.getElementById('planner-uncheck-all').addEventListener('click', function() {
+    if (!plannerUser) return;
+    nodes.filter(n => n.type === 'scope_item').forEach(s => {
+        const key = pKey(s.id, plannerUser);
+        const hadData = plannerState.checkedID[key] || plannerState.checkedAD[key];
+        delete plannerState.checkedID[key];
+        delete plannerState.checkedAD[key];
+        if (hadData) pSaveItem(s.id, false, false, plannerState.notes[key] || '');
+    });
+    renderPlanner(document.getElementById('planner-search').value);
+});
+
+// Export notes as text
+document.getElementById('planner-export-btn').addEventListener('click', function() {
+    if (!plannerUser) return;
+    let output = 'COURSE PLANNER EXPORT — ' + plannerUser + '\n' + '='.repeat(50) + '\n\n';
+    const scopeItems = nodes.filter(n => n.type === 'scope_item');
+    const totalID = scopeItems.filter(s => plannerState.checkedID[pKey(s.id, plannerUser)]).length;
+    const totalAD = scopeItems.filter(s => plannerState.checkedAD[pKey(s.id, plannerUser)]).length;
+    output += `Progress: ID ${totalID}/${scopeItems.length} · AD ${totalAD}/${scopeItems.length}\n\n`;
+    
+    const comps = nodes.filter(n => n.type === 'competency');
+    comps.forEach(comp => {
+        const esForComp = nodes.filter(n => n.type === 'evidence_statement' && n.competency === comp.id);
+        output += `${'─'.repeat(50)}\n${comp.name}\n${'─'.repeat(50)}\n`;
+        
+        esForComp.forEach(es => {
+            output += `\n  ${es.name}: ${es.description || ''}\n`;
+            const scopeForEs = scopeItems.filter(s => s.es === es.id);
+            scopeForEs.forEach(s => {
+                const key = pKey(s.id, plannerUser);
+                const checkID = plannerState.checkedID[key] ? '☑' : '☐';
+                const checkAD = plannerState.checkedAD[key] ? '☑' : '☐';
+                const note = plannerState.notes[key] ? ` → NOTE: ${plannerState.notes[key]}` : '';
+                output += `    ID:${checkID} AD:${checkAD} ${s.name}${note}\n`;
+            });
+        });
+        output += '\n';
+    });
+    
+    // Include other reviewers' notes
+    const otherReviewers = plannerReviewers.filter(r => r !== plannerUser);
+    if (otherReviewers.length) {
+        output += '\n' + '='.repeat(50) + '\nOTHER REVIEWERS\' NOTES\n' + '='.repeat(50) + '\n';
+        otherReviewers.forEach(r => {
+            const rNotes = Object.keys(plannerState.notes).filter(k => k.endsWith('_' + r) && plannerState.notes[k]);
+            if (rNotes.length) {
+                output += `\n--- ${r} ---\n`;
+                rNotes.forEach(k => {
+                    const sid = k.replace('_' + r, '');
+                    const scope = nodes.find(n => n.id === sid);
+                    output += `  ${scope ? scope.name : sid}: ${plannerState.notes[k]}\n`;
+                });
+            }
+        });
+    }
+    
+    const blob = new Blob([output], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'course-planner-export.txt';
+    a.click();
+    URL.revokeObjectURL(url);
+});
+
+// ===== MEETING NOTES (admin, data table) =====
+let meetingNoteSaveTimer = null;
+
+function loadMeetingNotes() {
+    try {
+        const saved = localStorage.getItem('es-meeting-notes');
+        if (saved) meetingNotes = JSON.parse(saved);
+    } catch(e) {}
+    
+    if (PLANNER_API) {
+        const cbName = 'mnotes_cb_' + Date.now();
+        window[cbName] = function(data) {
+            try {
+                (data || []).forEach(row => {
+                    if (row.scopeId && row.note) meetingNotes[row.scopeId] = row.note;
+                });
+            } catch(e) {}
+            renderTree();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            delete window[cbName];
+            const el = document.getElementById(cbName);
+            if (el) el.remove();
+        };
+        const s = document.createElement('script');
+        s.id = cbName;
+        s.src = PLANNER_API + '?action=loadMeetingNotes&callback=' + cbName;
+        s.onerror = function() { delete window[cbName]; s.remove(); };
+        document.body.appendChild(s);
+    }
+}
+
+function saveMeetingNoteAPI(scopeId, val) {
+    if (val) meetingNotes[scopeId] = val;
+    else delete meetingNotes[scopeId];
+    
+    try { localStorage.setItem('es-meeting-notes', JSON.stringify(meetingNotes)); } catch(e) {}
+    
+    if (PLANNER_API) {
+        const cbName = 'mnsave_cb_' + Date.now();
+        const params = new URLSearchParams({ action: 'saveMeetingNote', scopeId, note: val || '', callback: cbName });
+        window[cbName] = function() { delete window[cbName]; const el = document.getElementById(cbName); if (el) el.remove(); };
+        const s = document.createElement('script');
+        s.id = cbName;
+        s.src = PLANNER_API + '?' + params.toString();
+        s.onerror = function() { delete window[cbName]; s.remove(); };
+        document.body.appendChild(s);
+    }
+}
+
+function toggleTreeNote(scopeId, btn) {
+    const noteRow = document.getElementById('tree-note-row-' + scopeId);
+    if (!noteRow) return;
+    noteRow.classList.toggle('open');
+    if (noteRow.classList.contains('open')) {
+        const ta = noteRow.querySelector('textarea');
+        if (ta) ta.focus();
+    }
+}
+
+function saveTreeNote(scopeId, textarea) {
+    const val = textarea.value.trim();
+    saveMeetingNoteAPI(scopeId, val);
+    // Update button appearance
+    const noteRow = textarea.closest('.tree-note-row');
+    const header = noteRow?.previousElementSibling;
+    const btn = header?.querySelector('.tree-note-btn');
+    if (btn) btn.classList.toggle('has-note', !!val);
+}
+
+// Load meeting notes on init
+loadMeetingNotes();
+
+// ===== COMPARE TAB =====
+function populateCompareDropdowns() {
+    const mode = document.getElementById('compare-mode').value;
+    let items;
+    if (mode === 'competency') items = nodes.filter(n => n.type === 'competency');
+    else if (mode === 'es') items = nodes.filter(n => n.type === 'evidence_statement');
+    else items = nodes.filter(n => n.type === 'group');
+    
+    const optionsA = items.map((n, i) => `<option value="${n.id}" ${i === 0 ? 'selected' : ''}>${n.name}</option>`).join('');
+    const optionsB = items.map((n, i) => `<option value="${n.id}" ${i === Math.min(1, items.length-1) ? 'selected' : ''}>${n.name}</option>`).join('');
+    document.getElementById('compare-a').innerHTML = optionsA;
+    document.getElementById('compare-b').innerHTML = optionsB;
+    runComparison();
+}
+
+function getScopeItemsFor(mode, id) {
+    if (mode === 'competency') return nodes.filter(n => n.type === 'scope_item' && n.competency === id);
+    if (mode === 'es') return nodes.filter(n => n.type === 'scope_item' && n.es === id);
+    return nodes.filter(n => n.type === 'scope_item' && n.group === id);
+}
+
+function runComparison() {
+    const mode = document.getElementById('compare-mode').value;
+    const aId = document.getElementById('compare-a').value;
+    const bId = document.getElementById('compare-b').value;
+    const container = document.getElementById('compare-body');
+    
+    if (!aId || !bId) { container.innerHTML = '<div class="compare-empty">Select two items to compare</div>'; return; }
+    if (aId === bId) { container.innerHTML = '<div class="compare-empty">Select two <em>different</em> items to see a meaningful comparison</div>'; return; }
+    
+    const aNode = nodes.find(n => n.id === aId);
+    const bNode = nodes.find(n => n.id === bId);
+    const aName = aNode?.name || aId;
+    const bName = bNode?.name || bId;
+    
+    const aScopes = getScopeItemsFor(mode, aId);
+    const bScopes = getScopeItemsFor(mode, bId);
+    const aNames = new Set(aScopes.map(s => s.name));
+    const bNames = new Set(bScopes.map(s => s.name));
+    
+    const shared = aScopes.filter(s => bNames.has(s.name));
+    const onlyA = aScopes.filter(s => !bNames.has(s.name));
+    const onlyB = bScopes.filter(s => !aNames.has(s.name));
+    
+    let html = `<div class="compare-summary">
+        <div class="compare-summary-card a-card"><div class="num">${aScopes.length}</div><div class="label">Total in ${aName}</div></div>
+        <div class="compare-summary-card shared-card"><div class="num">${shared.length}</div><div class="label">Shared</div></div>
+        <div class="compare-summary-card b-card"><div class="num">${bScopes.length}</div><div class="label">Total in ${bName}</div></div>
+    </div>`;
+    
+    html += `<div class="compare-columns"><div class="compare-col">
+        <div class="compare-col-header side-a">${aName}<br><span style="font-size:0.7rem;font-weight:400;">${onlyA.length} unique \u00b7 ${shared.length} shared</span></div>`;
+    
+    const aGrouped = groupScopesByGroup(aScopes);
+    aGrouped.forEach(g => {
+        html += `<div class="compare-group-label">${g.groupName}</div>`;
+        g.items.forEach(s => {
+            const isShared = bNames.has(s.name);
+            html += `<div class="compare-item-row ${isShared ? 'shared' : 'unique'}">${isShared ? '\ud83d\udfe2 ' : '\ud83d\udfe0 '}${s.name}</div>`;
+        });
+    });
+    html += `</div>`;
+    
+    html += `<div class="compare-middle">
+        <div class="compare-stat shared"><span class="num">${shared.length}</span>shared</div>
+        <div class="compare-stat only"><span class="num">${onlyA.length}</span>only A</div>
+        <div class="compare-stat only"><span class="num">${onlyB.length}</span>only B</div>
+    </div>`;
+    
+    html += `<div class="compare-col">
+        <div class="compare-col-header side-b">${bName}<br><span style="font-size:0.7rem;font-weight:400;">${onlyB.length} unique \u00b7 ${shared.length} shared</span></div>`;
+    
+    const bGrouped = groupScopesByGroup(bScopes);
+    bGrouped.forEach(g => {
+        html += `<div class="compare-group-label">${g.groupName}</div>`;
+        g.items.forEach(s => {
+            const isShared = aNames.has(s.name);
+            html += `<div class="compare-item-row ${isShared ? 'shared' : 'unique'}">${isShared ? '\ud83d\udfe2 ' : '\ud83d\udd35 '}${s.name}</div>`;
+        });
+    });
+    html += `</div></div>`;
+    
+    container.innerHTML = html;
+}
+
+function groupScopesByGroup(scopeItems) {
+    const groups = [];
+    const groupMap = {};
+    scopeItems.forEach(s => {
+        if (!groupMap[s.group]) {
+            const g = nodes.find(n => n.id === s.group);
+            groupMap[s.group] = { groupName: g ? g.name : s.group, items: [] };
+            groups.push(groupMap[s.group]);
+        }
+        groupMap[s.group].items.push(s);
+    });
+    return groups;
+}
+
+document.getElementById('compare-mode').addEventListener('change', populateCompareDropdowns);
+document.getElementById('compare-a').addEventListener('change', runComparison);
+document.getElementById('compare-b').addEventListener('change', runComparison);
+document.getElementById('compare-clear').addEventListener('click', function() {
+    document.getElementById('compare-mode').value = 'es';
+    populateCompareDropdowns();
+    document.getElementById('compare-body').innerHTML = '<div class="compare-empty">Select two items above to compare their scope items side by side</div>';
+});
+
+// ===== ADMIN STATUS CONTROLS (Lynn only) =====
+
+function changeStatus(scopeId, newStatus) {
+    const node = nodes.find(n => n.id === scopeId);
+    if (!node || !isAdmin()) return;
+    node.status = newStatus;
+    renderPlanner(document.getElementById('planner-search')?.value || '');
+    if (typeof applyGraphFilters === 'function') applyGraphFilters();
+    if (typeof renderTree === 'function') renderTree();
+    if (typeof isCardView !== 'undefined' && isCardView && typeof renderCardView === 'function') renderCardView();
+    
+    if (PLANNER_API) {
+        const cbName = 'status_cb_' + Date.now();
+        const params = new URLSearchParams({ action: 'saveStatus', scopeId, status: newStatus, callback: cbName });
+        window[cbName] = function() { pSetSync('Status saved \u2713', 'saved'); delete window[cbName]; const el = document.getElementById(cbName); if (el) el.remove(); };
+        const s = document.createElement('script'); s.id = cbName;
+        s.src = PLANNER_API + '?' + params.toString();
+        s.onerror = function() { delete window[cbName]; s.remove(); };
+        document.body.appendChild(s);
+    }
+}
+
+// Re-render planner when tab is switched to it
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        if (this.dataset.tab === 'planner') {
+            if (plannerUser) { pLoadData(); } else { plannerShowReturning(); }
+        }
+        if (this.dataset.tab === 'compare') { populateCompareDropdowns(); }
+    });
+});
+
+
+// Auto-refresh planner every 30s if tab is active
+setInterval(() => {
+    if (plannerUser && document.getElementById('planner-view').classList.contains('active')) {
+        pLoadData();
+    }
+}, 30000);
+
+// ===== CCW COMPARE =====
+const compMap = {
+    C1: { id: 'C1', label: 'Supports a Scientific Claim' },
+    C2: { id: 'C2', label: 'Evaluates Scientific Claims' },
+    C3: { id: 'C3', label: 'Explains Real-World Systems' }
+};
+
+function ccwShowDoc() {
+    document.getElementById('ccw-doc-panel').style.display = '';
+    document.getElementById('ccw-compare-panel').style.display = 'none';
+    document.getElementById('ccw-compare-controls').style.display = 'none';
+    document.getElementById('ccw-view-doc').classList.add('active');
+    document.getElementById('ccw-view-compare').classList.remove('active');
+}
+
+function ccwShowCompare() {
+    document.getElementById('ccw-doc-panel').style.display = 'none';
+    document.getElementById('ccw-compare-panel').style.display = '';
+    document.getElementById('ccw-compare-controls').style.display = 'flex';
+    document.getElementById('ccw-view-doc').classList.remove('active');
+    document.getElementById('ccw-view-compare').classList.add('active');
+    ccwRunCompare();
+}
+
+function ccwRunCompare() {
+    const comp = document.getElementById('ccw-compare-comp').value;
+    
+    // LEFT: Extract the CCW competency table
+    const ccwTable = document.querySelector(`.ccw-comp-table[data-comp="${comp}"]`);
+    const leftBody = document.getElementById('ccw-compare-left-body');
+    if (ccwTable) {
+        leftBody.innerHTML = `<div style="font-size:0.78rem;font-weight:700;color:#4a90c2;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.04em;">CCW — ${comp}: ${compMap[comp].label}</div>` + ccwTable.outerHTML;
+    } else {
+        leftBody.innerHTML = '<p style="color:#999;">No CCW data found for this competency.</p>';
+    }
+    
+    // RIGHT: Build ES + Scope items from the knowledge graph data
+    const rightBody = document.getElementById('ccw-compare-right-body');
+    const compNode = nodes.find(n => n.id === comp);
+    if (!compNode) { rightBody.innerHTML = '<p style="color:#999;">No graph data found.</p>'; return; }
+    
+    const esNodes = nodes.filter(n => n.type === 'evidence_statement' && n.competency === comp);
+    let html = `<div style="font-size:0.78rem;font-weight:700;color:#4a90c2;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.04em;">Knowledge Graph — ${comp}: ${compMap[comp].label}</div>`;
+    
+    esNodes.forEach(es => {
+        html += `<div class="ccw-compare-es-group">`;
+        html += `<div class="ccw-compare-es-title">${es.name}</div>`;
+        
+        // Get groups for this ES
+        const groups = nodes.filter(n => n.type === 'group' && 
+            nodes.some(s => s.type === 'scope_item' && s.es === es.id && s.group === n.id));
+        
+        groups.forEach(g => {
+            html += `<div class="ccw-compare-group-title">${g.name}</div>`;
+            const scopeItems = nodes.filter(n => n.type === 'scope_item' && n.es === es.id && n.group === g.id);
+            scopeItems.forEach(s => {
+                html += `<div class="ccw-compare-scope-item">
+                    <span class="ccw-compare-status-dot ${s.status || ''}"></span>
+                    ${s.name}
+                </div>`;
+            });
+        });
+        
+        html += `</div>`;
+    });
+    
+    rightBody.innerHTML = html;
+}
+
+function ccwExportCompare() {
+    const comp = document.getElementById('ccw-compare-comp').value;
+    const info = compMap[comp];
+    const leftHtml = document.getElementById('ccw-compare-left-body').innerHTML;
+    const rightHtml = document.getElementById('ccw-compare-right-body').innerHTML;
+    
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>CCW Compare — ${comp}: ${info.label}</title>
+<style>
+body { font-family: 'Segoe UI', system-ui, sans-serif; margin: 0; padding: 20px; background: #f5f7fa; }
+h1 { font-size: 1.2rem; color: #1a1a2e; margin-bottom: 4px; }
+h2 { font-size: 0.9rem; color: #666; margin-bottom: 20px; font-weight: 400; }
+.cols { display: flex; gap: 20px; }
+.col { flex: 1; background: #fff; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; }
+.col-header { padding: 10px 16px; background: #2c3e6b; color: #fff; font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
+.col-body { padding: 16px; font-size: 0.82rem; line-height: 1.6; color: #333; }
+table { width: 100%; border-collapse: collapse; }
+th { background: #2c3e6b; color: #fff; padding: 8px 12px; text-align: left; font-size: 0.8rem; border: 1px solid #1a2a4a; }
+td { padding: 8px 12px; border: 1px solid #ddd; vertical-align: top; }
+td.ccw-label-cell { background: #f0f4f8; font-weight: 700; color: #1a1a2e; width: 180px; }
+.ccw-comp-title-row { background: #1a3a5c !important; color: #fff; font-size: 0.9rem; }
+.ccw-comp-stmt-row { background: #f8f9fa; }
+.ccw-divider-row { background: #3a5a8c !important; color: #fff; text-align: center; }
+.ccw-comp-label { background: rgba(255,255,255,0.25); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; margin-right: 6px; }
+.ccw-compare-es-title { font-weight: 700; padding: 8px 12px; background: #e8f4f8; border-radius: 6px 6px 0 0; border: 1px solid #d0e0e8; margin-top: 12px; }
+.ccw-compare-group-title { font-weight: 600; color: #6a6aaa; padding: 6px 12px; background: #f5f0ff; border-left: 1px solid #d0e0e8; border-right: 1px solid #d0e0e8; font-size: 0.85rem; }
+.ccw-compare-scope-item { padding: 5px 12px; border: 1px solid #e8e8e8; border-top: none; display: flex; align-items: center; gap: 8px; font-size: 0.82rem; }
+.ccw-compare-scope-item:last-child { border-radius: 0 0 6px 6px; }
+.ccw-compare-status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.ccw-compare-status-dot.green { background: #22c55e; }
+.ccw-compare-status-dot.magenta { background: #d946ef; }
+.ccw-compare-status-dot.cyan { background: #06b6d4; }
+.ccw-compare-es-group { margin-bottom: 12px; }
+@media print { body { background: #fff; } .cols { gap: 12px; } }
+</style></head><body>
+<h1>CCW Side-by-Side Compare</h1>
+<h2>${comp} — ${info.label}</h2>
+<div class="cols">
+<div class="col"><div class="col-header">CCW Competency Detail</div><div class="col-body">${leftHtml}</div></div>
+<div class="col"><div class="col-header">Knowledge Graph — ES &amp; Scope Items</div><div class="col-body">${rightHtml}</div></div>
+</div></body></html>`;
+    
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `CCW_Compare_${comp}_${info.label.replace(/\s+/g, '_')}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+// Auto-login if returning
+const prevPlannerUser = localStorage.getItem('plannerCurrent');
+if (prevPlannerUser) {
+    plannerLogin(prevPlannerUser);
+} else {
+    plannerShowReturning();
+    renderPlanner();
+}
+
+// Initialize Lucide icons
+if (typeof lucide !== 'undefined') lucide.createIcons();
+</script>
+</body>
+</html>
