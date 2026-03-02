@@ -421,6 +421,138 @@
         /* Highlight tree rows that have notes */
         .tree-node.has-note > .tree-node-header { background: linear-gradient(135deg, #fef9e7, #fef3cd) !important; border-left-color: #f0c040 !important; }
         .tree-node.has-note > .tree-node-header::after { content: ''; }
+
+        /* ===== WHAT'S NEW TAB ===== */
+        .whatsnew-view { padding: 30px 40px; overflow-y: auto; color: #fff; max-width: 960px; margin: 0 auto; height: 100%; }
+        .whatsnew-view h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: 4px; letter-spacing: -0.02em; }
+        .whatsnew-view h1 .sparkle { color: #6cb4e4; }
+        .whatsnew-view .wn-subtitle { color: rgba(255,255,255,0.5); font-size: 0.85rem; line-height: 1.6; margin-bottom: 20px; max-width: 640px; }
+        .whatsnew-view .wn-subtitle .accent { color: #6cb4e4; font-weight: 600; }
+        
+        .wn-stats { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+        .wn-stat { display: flex; align-items: center; gap: 7px; padding: 6px 14px; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); }
+        .wn-stat .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .wn-stat .label { color: rgba(255,255,255,0.55); font-size: 0.75rem; }
+        .wn-stat .val { color: #fff; font-size: 0.9rem; font-weight: 700; }
+
+        .wn-controls { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+        .wn-filter-btn { padding: 6px 14px; border: 1px solid rgba(255,255,255,0.15); border-radius: 20px; background: none; color: rgba(255,255,255,0.6); font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .wn-filter-btn:hover { background: rgba(255,255,255,0.05); color: #fff; }
+        .wn-filter-btn.active { background: rgba(74,144,194,0.2); border-color: #4a90c2; color: #6cb4e4; }
+        .wn-expand-btn { padding: 6px 14px; border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; background: none; color: rgba(255,255,255,0.5); font-size: 0.72rem; cursor: pointer; margin-left: auto; }
+        .wn-expand-btn:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+
+        .wn-section { margin-bottom: 28px; }
+        .wn-section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+        .wn-section-header .icon { font-size: 1.1rem; }
+        .wn-section-header h2 { font-size: 1.05rem; font-weight: 700; color: #fff; margin: 0; }
+        .wn-section-header .count-pill { padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; color: #0a1628; }
+        .wn-section-line { height: 2px; border-radius: 1px; margin-bottom: 14px; }
+
+        /* Revision card */
+        .wn-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; margin-bottom: 10px; overflow: hidden; transition: border-color 0.25s, box-shadow 0.25s; }
+        .wn-card.expanded { border-color: rgba(108,180,228,0.25); box-shadow: 0 0 20px rgba(108,180,228,0.06); }
+        .wn-card-header { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255,255,255,0.02); border: none; cursor: pointer; text-align: left; }
+        .wn-card-header:hover { background: rgba(255,255,255,0.05); }
+        .wn-card-left { display: flex; align-items: center; gap: 10px; }
+        .wn-card-id { color: #fff; font-weight: 700; font-size: 0.9rem; font-family: 'Consolas', 'Courier New', monospace; }
+        .wn-badge { padding: 2px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em; color: #0a1628; }
+        .wn-badge-revised { background: #facc15; }
+        .wn-badge-new { background: #4ade80; }
+        .wn-badge-renumbered { background: #fb923c; }
+        .wn-badge-unchanged { background: rgba(255,255,255,0.2); color: rgba(255,255,255,0.7); }
+        .wn-card-right { display: flex; align-items: center; gap: 10px; }
+        .wn-card-hint { color: rgba(255,255,255,0.3); font-size: 0.72rem; }
+        .wn-chevron { color: #6cb4e4; font-size: 1.1rem; transition: transform 0.2s; line-height: 1; }
+        .wn-card.expanded .wn-chevron { transform: rotate(180deg); }
+
+        .wn-card-body { padding: 14px 16px 12px; border-top: 1px solid rgba(255,255,255,0.06); animation: wnSlide 0.25s ease; }
+        @keyframes wnSlide { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+        .wn-old-label, .wn-new-label, .wn-why-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+        .wn-old-label { color: #f87171; opacity: 0.7; }
+        .wn-new-label { color: #4ade80; }
+        .wn-why-label { color: #facc15; }
+        .wn-old-text { color: rgba(255,255,255,0.5); font-size: 0.82rem; line-height: 1.5; margin: 3px 0 10px; text-decoration: line-through; text-decoration-color: rgba(248,113,113,0.3); }
+        .wn-new-text { color: rgba(255,255,255,0.92); font-size: 0.88rem; line-height: 1.55; margin: 3px 0 12px; }
+        .wn-new-text .verb { color: #6cb4e4; font-weight: 700; }
+        .wn-why-box { padding: 10px 14px; background: rgba(250,204,21,0.06); border-left: 3px solid #facc15; border-radius: 0 6px 6px 0; margin-bottom: 6px; }
+        .wn-why-short { color: #fff; font-size: 0.82rem; line-height: 1.5; margin: 3px 0 0; }
+
+        /* Collapsible note blocks (matches data table style) */
+        .wn-note-toggle { display: flex; align-items: center; gap: 6px; padding: 5px 10px; background: none; border: none; cursor: pointer; color: #6cb4e4; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.03em; opacity: 0.6; transition: opacity 0.2s; }
+        .wn-note-toggle:hover { opacity: 1; }
+        .wn-note-toggle.open { opacity: 1; }
+        .wn-note-arrow { display: inline-block; font-size: 0.6rem; transition: transform 0.2s; }
+        .wn-note-toggle.open .wn-note-arrow { transform: rotate(90deg); }
+        .wn-note-body { padding: 0 12px 10px 28px; color: rgba(255,255,255,0.6); font-size: 0.8rem; line-height: 1.65; display: none; animation: wnNoteSlide 0.2s ease; }
+        .wn-note-body.open { display: block; }
+        @keyframes wnNoteSlide { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+        .wn-note-wrapper { margin-top: 6px; border-radius: 6px; border: 1px solid transparent; transition: all 0.25s; }
+        .wn-note-wrapper.open { border-color: rgba(108,180,228,0.2); background: rgba(108,180,228,0.04); }
+
+        /* Editable note area (like data table textarea) */
+        .wn-discussion-note { width: 100%; margin-top: 8px; padding: 8px 10px; border: 1px solid rgba(255,255,255,0.12); border-radius: 6px; font-size: 0.8rem; font-family: inherit; resize: vertical; min-height: 50px; background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.85); transition: border-color 0.2s; }
+        .wn-discussion-note:focus { outline: none; border-color: #4a90c2; background: rgba(255,255,255,0.06); }
+        .wn-discussion-note::placeholder { color: rgba(255,255,255,0.25); }
+        .wn-note-btn-row { display: flex; align-items: center; gap: 6px; margin-top: 6px; }
+        .wn-note-btn { background: none; border: none; cursor: pointer; font-size: 0.85rem; opacity: 0.5; transition: opacity 0.2s; padding: 2px 4px; }
+        .wn-note-btn:hover { opacity: 1; }
+        .wn-note-btn.has-note { opacity: 0.85; }
+        .wn-discussion-row { display: none; padding: 0 16px 10px; }
+        .wn-discussion-row.open { display: block; }
+
+        /* C3 unchanged section */
+        .wn-unchanged-card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 16px 18px; }
+        .wn-unchanged-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .wn-unchanged-header .checkmark { color: #4ade80; font-size: 1.1rem; }
+        .wn-unchanged-header h3 { color: #fff; font-size: 0.95rem; font-weight: 700; margin: 0; }
+        .wn-unchanged-stmt { color: rgba(255,255,255,0.5); font-size: 0.82rem; font-style: italic; margin-bottom: 12px; line-height: 1.5; }
+        .wn-unchanged-es { padding: 8px 12px; border-left: 3px solid rgba(255,255,255,0.1); margin-bottom: 6px; border-radius: 0 6px 6px 0; background: rgba(255,255,255,0.02); }
+        .wn-unchanged-es .es-id { color: #4ecdc4; font-weight: 700; font-size: 0.78rem; font-family: 'Consolas', monospace; }
+        .wn-unchanged-es .es-text { color: rgba(255,255,255,0.6); font-size: 0.8rem; margin-top: 2px; line-height: 1.45; }
+        .wn-unchanged-note { margin-top: 12px; padding: 10px 14px; background: rgba(74,144,194,0.06); border-left: 3px solid rgba(74,144,194,0.3); border-radius: 0 6px 6px 0; color: rgba(255,255,255,0.55); font-size: 0.78rem; line-height: 1.55; }
+
+        /* ===== CHANGELOG / WHAT'S NEW ===== */
+        .changelog-marker { position: relative; display: inline-block; cursor: help; margin-left: 6px; font-size: 12px; vertical-align: middle; }
+        .changelog-marker .changelog-star { color: #daa520; animation: cl-pulse 2s infinite; }
+        @keyframes cl-pulse { 0%,100%{ opacity:1; } 50%{ opacity:0.4; } }
+        .changelog-marker .changelog-bubble {
+            display: none; position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%);
+            background: #fff; color: #333; padding: 10px 14px; border-radius: 10px; font-size: 0.78rem; line-height: 1.5;
+            min-width: 240px; max-width: 360px; z-index: 2000; white-space: normal;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15); border: 1.5px solid #daa520;
+        }
+        .changelog-marker .changelog-bubble::after {
+            content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            border: 8px solid transparent; border-top-color: #fff;
+        }
+        .changelog-marker .changelog-bubble::before {
+            content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+            border: 9px solid transparent; border-top-color: #daa520;
+        }
+        .changelog-marker:hover .changelog-bubble { display: block; }
+        .changelog-bubble .cb-title { font-weight: 700; color: #b8860b; margin-bottom: 4px; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.04em; }
+        .changelog-bubble .cb-old { color: #c0392b; font-size: 0.75rem; margin-bottom: 2px; }
+        .changelog-bubble .cb-note { color: #2980b9; font-size: 0.75rem; }
+
+        /* Dark theme overrides for graph sidebar */
+        .sidebar .changelog-bubble, #graph-view .changelog-bubble {
+            background: #1a1a2e; color: #e0e0e0; border-color: rgba(255,215,0,0.4);
+        }
+        .sidebar .changelog-bubble::after, #graph-view .changelog-bubble::after { border-top-color: #1a1a2e; }
+        .sidebar .changelog-bubble::before, #graph-view .changelog-bubble::before { border-top-color: rgba(255,215,0,0.4); }
+        .sidebar .cb-title, #graph-view .cb-title { color: #ffd700; }
+        .sidebar .cb-old, #graph-view .cb-old { color: #ff6b6b; }
+        .sidebar .cb-note, #graph-view .cb-note { color: #6cb4e4; }
+
+        /* What's New toggle button */
+        .whats-new-btn { padding: 5px 12px; background: rgba(255,215,0,0.15); border: 1px solid rgba(255,215,0,0.4); border-radius: 4px; color: #ffd700; font-size: 0.65rem; cursor: pointer; font-weight: 600; transition: all 0.2s; }
+        .whats-new-btn:hover { background: rgba(255,215,0,0.25); }
+        .whats-new-btn.active { background: rgba(255,215,0,0.35); border-color: #ffd700; }
+        .table-view .whats-new-btn { padding: 10px 18px; font-size: 0.85rem; background: #fff8dc; border-color: #daa520; color: #8b6914; }
+        .table-view .whats-new-btn:hover { background: #ffefc0; }
+        .table-view .whats-new-btn.active { background: #ffe48a; border-color: #b8860b; }
     </style>
 </head>
 <body>
@@ -431,6 +563,7 @@
         <button class="tab" data-tab="planner">📝 Course Planner</button>
         <button class="tab" data-tab="compare">⚖ Compare</button>
         <button class="tab" data-tab="ccw">📄 CCW</button>
+        <button class="tab" data-tab="whatsnew">✦ What's New</button>
     </div>
     
     <div class="tab-content" id="help-view">
@@ -449,9 +582,9 @@
             <h2>Node Types</h2>
             <div class="definition-grid">
                 <div class="definition-card"><div class="term"><div class="dot" style="background: #ff6b6b"></div><span class="term-name">Competencies (3)</span></div><div class="definition">C1: Supports claims with evidence, C2: Evaluates claims, C3: Explains systems</div></div>
-                <div class="definition-card"><div class="term"><div class="dot" style="background: #4ecdc4"></div><span class="term-name">Evidence Statements (10)</span></div><div class="definition">Measurable outcomes describing what students demonstrate</div></div>
+                <div class="definition-card"><div class="term"><div class="dot" style="background: #4ecdc4"></div><span class="term-name">Evidence Statements (11)</span></div><div class="definition">Measurable outcomes describing what students demonstrate</div></div>
                 <div class="definition-card"><div class="term"><div class="dot" style="background: #a78bfa"></div><span class="term-name">Groups (9)</span></div><div class="definition">Thematic categories: Scientific Claims, Data as Evidence, Reasoning, etc.</div></div>
-                <div class="definition-card"><div class="term"><div class="dot" style="background: #6bcb77"></div><span class="term-name">Scope Items (125)</span></div><div class="definition">Specific skills/knowledge students learn, color-coded by status</div></div>
+                <div class="definition-card"><div class="term"><div class="dot" style="background: #6bcb77"></div><span class="term-name">Scope Items (117)</span></div><div class="definition">Specific skills/knowledge students learn, color-coded by status</div></div>
             </div>
             
             <h2>Assessment Status</h2>
@@ -481,7 +614,7 @@
         <div class="container">
             <div class="sidebar">
                 <h1>ES Knowledge Graph</h1>
-                <p>Exploring Systems Like a Scientist • 10 Evidence Statements • 3 Competencies</p>
+                <p>Exploring Systems Like a Scientist • 11 Evidence Statements • 3 Competencies</p>
                 
                 <div class="info-box" id="info-box">
                     <div class="info-box-placeholder" id="info-placeholder">
@@ -509,9 +642,9 @@
                     <h3>Node Types (click to filter)</h3>
                     <div class="legend-grid">
                         <div class="legend-item" data-type="competency"><div class="legend-dot" style="background:#ff6b6b"></div><span>Competencies</span><span class="legend-count" id="count-competency">3</span></div>
-                        <div class="legend-item" data-type="evidence_statement"><div class="legend-dot" style="background:#4ecdc4"></div><span>Evidence St.</span><span class="legend-count" id="count-evidence_statement">10</span></div>
+                        <div class="legend-item" data-type="evidence_statement"><div class="legend-dot" style="background:#4ecdc4"></div><span>Evidence St.</span><span class="legend-count" id="count-evidence_statement">11</span></div>
                         <div class="legend-item" data-type="group"><div class="legend-dot" style="background:#a78bfa"></div><span>Groups</span><span class="legend-count" id="count-group">9</span></div>
-                        <div class="legend-item" data-type="scope_item"><div class="legend-dot" style="background:#6bcb77"></div><span>Scope Items</span><span class="legend-count" id="count-scope_item">125</span></div>
+                        <div class="legend-item" data-type="scope_item"><div class="legend-dot" style="background:#6bcb77"></div><span>Scope Items</span><span class="legend-count" id="count-scope_item">117</span></div>
                     </div>
                 </div>
                 
@@ -546,6 +679,7 @@
                     <button class="clear-filters-btn" id="clear-filters"><i class="fa fa-refresh"></i> Reset</button>
                     <button class="expand-all-btn" id="expand-all">Expand All</button>
                     <button class="collapse-all-btn" id="collapse-all">Collapse All</button>
+                    <button class="whats-new-btn" id="toggle-whats-new-tree" onclick="toggleWhatsNew()">✦ What's New</button>
                     <button class="toggle-status-btn" id="toggle-status-colors-tree" style="padding:10px 18px;font-size:0.85rem;">Status Colors: ON</button>
                 </div>
             </div>
@@ -679,6 +813,268 @@ A variety of resources such as textbooks, scholarly sources, multimedia resource
         </div>
     </div>
 
+    <!-- ===== WHAT'S NEW TAB ===== -->
+    <div class="tab-content" id="whatsnew-view">
+        <div class="whatsnew-view">
+            <h1><span class="sparkle">✦</span> What's New</h1>
+            <p class="wn-subtitle">Evidence Statement revisions and additions. The <span class="accent">✦ What's New</span> button in the Table View toggles inline markers on every changed item. Below is the full detail with design rationale.</p>
+
+            <div class="wn-stats">
+                <div class="wn-stat"><div class="dot" style="background:#facc15"></div><span class="label">Revised</span><span class="val">3</span></div>
+                <div class="wn-stat"><div class="dot" style="background:#4ade80"></div><span class="label">New</span><span class="val">1</span></div>
+                <div class="wn-stat"><div class="dot" style="background:#fb923c"></div><span class="label">Renumbered</span><span class="val">2</span></div>
+                <div class="wn-stat"><div class="dot" style="background:rgba(255,255,255,0.25)"></div><span class="label">Unchanged (C3)</span><span class="val">All 4</span></div>
+            </div>
+
+            <div class="wn-controls">
+                <button class="wn-filter-btn active" onclick="wnFilter('all', this)">All Changes</button>
+                <button class="wn-filter-btn" onclick="wnFilter('C1', this)">C1 Only</button>
+                <button class="wn-filter-btn" onclick="wnFilter('C2', this)">C2 Only</button>
+                <button class="wn-filter-btn" onclick="wnFilter('C3', this)">C3 (No Changes)</button>
+                <button class="wn-expand-btn" onclick="wnExpandAll()">Expand All</button>
+                <button class="wn-expand-btn" onclick="wnCollapseAll()">Collapse All</button>
+            </div>
+
+            <!-- ===== C1 WORDING REVISIONS ===== -->
+            <div class="wn-section" data-wn-comp="C1" id="wn-section-c1-revised">
+                <div class="wn-section-header">
+                    <span class="icon">✏️</span>
+                    <h2>C1 — ES Wording Revisions</h2>
+                    <span class="count-pill" style="background:#facc15">3 Revised</span>
+                </div>
+                <div class="wn-section-line" style="background: linear-gradient(90deg, #facc15, transparent);"></div>
+
+                <!-- C1-ES1 -->
+                <div class="wn-card" data-wn-comp="C1" data-wn-id="C1-ES1" id="wn-card-c1es1">
+                    <div class="wn-card-header" onclick="wnToggleCard('wn-card-c1es1')">
+                        <div class="wn-card-left"><span class="wn-card-id">C1-ES1</span><span class="wn-badge wn-badge-revised">Revised</span></div>
+                        <div class="wn-card-right"><span class="wn-card-hint">expand</span><span class="wn-chevron">⌄</span></div>
+                    </div>
+                    <div class="wn-card-body" style="display:none;">
+                        <div class="wn-old-label">Old</div>
+                        <p class="wn-old-text">The learner determines the validity of a scientific claim based on relevant, credible evidence.</p>
+                        <div class="wn-new-label">New</div>
+                        <p class="wn-new-text">The learner <span class="verb">selects</span> relevant, credible evidence that supports a scientific claim.</p>
+                        <div class="wn-why-box">
+                            <div class="wn-why-label">Why</div>
+                            <p class="wn-why-short">"Selects" replaces "determines validity" — active choice, not final judgment. C1 is about supporting claims, not judging validity.</p>
+                        </div>
+                        <div class="wn-note-wrapper" id="wn-note-ext-c1es1">
+                            <button class="wn-note-toggle" onclick="wnToggleNote('wn-note-ext-c1es1')"><span class="wn-note-arrow">▶</span> 📝 Extended Rationale</button>
+                            <div class="wn-note-body">"Determines validity" implies a final true/false judgment — that's evaluation territory (C2). C1 is about <em>supporting</em> claims with evidence. "Selects" implies active choice and judgment about <em>which</em> evidence to use. It sits at the right Bloom's level: stronger than "identifies" (Level 1, passive recognition) but avoids the evaluative "determines validity" (Level 4+).</div>
+                        </div>
+                        <div class="wn-note-wrapper" id="wn-note-bloom-c1es1">
+                            <button class="wn-note-toggle" onclick="wnToggleNote('wn-note-bloom-c1es1')"><span class="wn-note-arrow">▶</span> 📝 Bloom's Verb Analysis</button>
+                            <div class="wn-note-body"><strong style="color:rgba(255,255,255,0.8)">Verb Strength Ladder:</strong><br>• "Identifies" = Level 1 (passive recognition)<br>• "Selects" = Level 2+ (implies judgment, choosing the RIGHT evidence)<br>• "Determines validity" = Level 4+ (evaluation/judgment of truth)<br><br>"Selects" is the appropriate middle ground for C1's supporting role — students demonstrate judgment through curation, not adjudication.</div>
+                        </div>
+                        <!-- Discussion note (like data table) -->
+                        <div class="wn-note-btn-row"><button class="wn-note-btn" onclick="wnToggleDiscussion('wn-disc-c1es1')" title="Add discussion notes">💬 Discussion Notes</button></div>
+                        <div class="wn-discussion-row" id="wn-disc-c1es1"><textarea class="wn-discussion-note" placeholder="Add meeting or review discussion notes..." onchange="wnSaveDiscussion('C1-ES1', this)"></textarea></div>
+                    </div>
+                </div>
+
+                <!-- C1-ES3 (was ES2, renumbered) -->
+                <div class="wn-card" data-wn-comp="C1" data-wn-id="C1-ES3" id="wn-card-c1es3">
+                    <div class="wn-card-header" onclick="wnToggleCard('wn-card-c1es3')">
+                        <div class="wn-card-left"><span class="wn-card-id">C1-ES3</span><span class="wn-badge wn-badge-renumbered">Renumbered</span></div>
+                        <div class="wn-card-right"><span class="wn-card-hint">expand</span><span class="wn-chevron">⌄</span></div>
+                    </div>
+                    <div class="wn-card-body" style="display:none;">
+                        <div style="color:rgba(255,255,255,0.4); font-size:0.72rem; margin-bottom:8px;">Previously C1-ES2 — renumbered due to new C1-ES2 insertion</div>
+                        <div class="wn-new-label">Current Wording (Updated)</div>
+                        <p class="wn-new-text">The learner <span class="verb">explains</span> how evidence logically supports or fails to support a claim.</p>
+                        <div class="wn-note-wrapper" id="wn-note-ext-c1es3">
+                            <button class="wn-note-toggle" onclick="wnToggleNote('wn-note-ext-c1es3')"><span class="wn-note-arrow">▶</span> 📝 Renumbering Note</button>
+                            <div class="wn-note-body">Previously ES2. The addition of the new C1-ES2 (constructing claims) shifted this down. Added "Translating scientific language to plain language" scope item here, because explaining/articulating requires translation — while constructing does not.</div>
+                        </div>
+                        <div class="wn-note-btn-row"><button class="wn-note-btn" onclick="wnToggleDiscussion('wn-disc-c1es3')" title="Add discussion notes">💬 Discussion Notes</button></div>
+                        <div class="wn-discussion-row" id="wn-disc-c1es3"><textarea class="wn-discussion-note" placeholder="Add meeting or review discussion notes..." onchange="wnSaveDiscussion('C1-ES3', this)"></textarea></div>
+                    </div>
+                </div>
+
+                <!-- C1-ES4 (was ES3, revised & renumbered) -->
+                <div class="wn-card" data-wn-comp="C1" data-wn-id="C1-ES4" id="wn-card-c1es4">
+                    <div class="wn-card-header" onclick="wnToggleCard('wn-card-c1es4')">
+                        <div class="wn-card-left"><span class="wn-card-id">C1-ES4</span><span class="wn-badge wn-badge-renumbered">Revised &amp; Renumbered</span></div>
+                        <div class="wn-card-right"><span class="wn-card-hint">expand</span><span class="wn-chevron">⌄</span></div>
+                    </div>
+                    <div class="wn-card-body" style="display:none;">
+                        <div style="color:rgba(255,255,255,0.4); font-size:0.72rem; margin-bottom:8px;">Previously C1-ES3</div>
+                        <div class="wn-old-label">Old</div>
+                        <p class="wn-old-text">The learner analyzes societal or ethical considerations related to a scientific claim, including potential benefits, risks, and unintended consequences.</p>
+                        <div class="wn-new-label">New</div>
+                        <p class="wn-new-text">The learner <span class="verb">explains</span> the potential social or ethical benefits, risks, or consequences of the <span class="verb">dissemination</span> of a scientific claim.</p>
+                        <div class="wn-why-box">
+                            <div class="wn-why-label">Why</div>
+                            <p class="wn-why-short">"Analyzes" is more evaluative (C2) than supportive (C1). "Explains" fits C1 better. "Dissemination" clarifies the real focus: what happens when claims are shared and communicated.</p>
+                        </div>
+                        <div class="wn-note-wrapper" id="wn-note-ext-c1es4">
+                            <button class="wn-note-toggle" onclick="wnToggleNote('wn-note-ext-c1es4')"><span class="wn-note-arrow">▶</span> 📝 Extended Rationale</button>
+                            <div class="wn-note-body">"Dissemination" clarifies the real focus: what happens when claims are <em>shared and communicated</em> — connecting to misinformation, public health, and policy decisions. The old wording ("related to") was too vague. This reframes the ethical dimension from abstract consideration to concrete consequence — when a scientific claim enters public discourse, what are the stakes?</div>
+                        </div>
+                        <div class="wn-note-wrapper" id="wn-note-scope-c1es4">
+                            <button class="wn-note-toggle" onclick="wnToggleNote('wn-note-scope-c1es4')"><span class="wn-note-arrow">▶</span> 📝 Scope Alignment</button>
+                            <div class="wn-note-body">Aligns with existing scope items:<br>• "Considering ethical implications of communicating scientific claims to the public"<br>• "Not about ethics as content, but ethics as consequence"<br>• "Aligns with misinformation and public impact examples"</div>
+                        </div>
+                        <div class="wn-note-btn-row"><button class="wn-note-btn" onclick="wnToggleDiscussion('wn-disc-c1es4')" title="Add discussion notes">💬 Discussion Notes</button></div>
+                        <div class="wn-discussion-row" id="wn-disc-c1es4"><textarea class="wn-discussion-note" placeholder="Add meeting or review discussion notes..." onchange="wnSaveDiscussion('C1-ES4', this)"></textarea></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== C1 NEW EVIDENCE STATEMENT ===== -->
+            <div class="wn-section" data-wn-comp="C1" id="wn-section-c1-new">
+                <div class="wn-section-header">
+                    <span class="icon">🆕</span>
+                    <h2>C1 — New Evidence Statement</h2>
+                    <span class="count-pill" style="background:#4ade80">1 New</span>
+                </div>
+                <div class="wn-section-line" style="background: linear-gradient(90deg, #4ade80, transparent);"></div>
+
+                <div class="wn-card" data-wn-comp="C1" data-wn-id="C1-ES2" id="wn-card-c1es2">
+                    <div class="wn-card-header" onclick="wnToggleCard('wn-card-c1es2')">
+                        <div class="wn-card-left"><span class="wn-card-id">C1-ES2</span><span class="wn-badge wn-badge-new">New</span></div>
+                        <div class="wn-card-right"><span class="wn-card-hint">expand</span><span class="wn-chevron">⌄</span></div>
+                    </div>
+                    <div class="wn-card-body" style="display:none;">
+                        <div class="wn-new-label">New Evidence Statement</div>
+                        <p class="wn-new-text">The learner <span class="verb">constructs</span> a scientific claim using evidence and reasoning.</p>
+                        <div class="wn-why-box">
+                            <div class="wn-why-label">Why This Was Added</div>
+                            <p class="wn-why-short">Fills the gap between selecting evidence (ES1) and explaining support (ES3). The CER framework is foundational — students need to build the claim before they can explain the connections.</p>
+                        </div>
+                        <div class="wn-note-wrapper" id="wn-note-ext-c1es2">
+                            <button class="wn-note-toggle" onclick="wnToggleNote('wn-note-ext-c1es2')"><span class="wn-note-arrow">▶</span> 📝 Extended Rationale</button>
+                            <div class="wn-note-body">C1 is about SUPPORTING claims — students need to understand how claims are BUILT to properly support them. The CER (Claim-Evidence-Reasoning) Framework is a foundational skill for scientific argumentation. Constructing a claim requires active synthesis, not just recognition or selection.<br><br><strong style="color:rgba(255,255,255,0.8)">This creates a logical progression:</strong><br>Select evidence (ES1) → Build the claim (ES2) → Explain the connection (ES3) → Consider impact (ES4)</div>
+                        </div>
+                        <div class="wn-note-wrapper" id="wn-note-scope-c1es2">
+                            <button class="wn-note-toggle" onclick="wnToggleNote('wn-note-scope-c1es2')"><span class="wn-note-arrow">▶</span> 📝 Scope Items</button>
+                            <div class="wn-note-body">Scope items for C1-ES2:<br>• Constructing a scientific claim<br>• Using the CER Framework for Constructing a Claim<br><br><em>Note: "Translating scientific language to plain language" moved to ES3 because explaining/articulating requires translation, while constructing does not.</em></div>
+                        </div>
+                        <div class="wn-note-wrapper" id="wn-note-renum-c1es2">
+                            <button class="wn-note-toggle" onclick="wnToggleNote('wn-note-renum-c1es2')"><span class="wn-note-arrow">▶</span> 📝 Renumbering Impact</button>
+                            <div class="wn-note-body">Insertion caused renumbering:<br>• Old C1-ES2 → now C1-ES3<br>• Old C1-ES3 → now C1-ES4</div>
+                        </div>
+                        <div class="wn-note-btn-row"><button class="wn-note-btn" onclick="wnToggleDiscussion('wn-disc-c1es2')" title="Add discussion notes">💬 Discussion Notes</button></div>
+                        <div class="wn-discussion-row" id="wn-disc-c1es2"><textarea class="wn-discussion-note" placeholder="Add meeting or review discussion notes..." onchange="wnSaveDiscussion('C1-ES2', this)"></textarea></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== C2 REVISION ===== -->
+            <div class="wn-section" data-wn-comp="C2" id="wn-section-c2">
+                <div class="wn-section-header">
+                    <span class="icon">✏️</span>
+                    <h2>C2 — ES Wording Revision</h2>
+                    <span class="count-pill" style="background:#facc15">1 Revised</span>
+                </div>
+                <div class="wn-section-line" style="background: linear-gradient(90deg, #facc15, transparent);"></div>
+
+                <div class="wn-card" data-wn-comp="C2" data-wn-id="C2-ES3" id="wn-card-c2es3">
+                    <div class="wn-card-header" onclick="wnToggleCard('wn-card-c2es3')">
+                        <div class="wn-card-left"><span class="wn-card-id">C2-ES3</span><span class="wn-badge wn-badge-revised">Revised</span></div>
+                        <div class="wn-card-right"><span class="wn-card-hint">expand</span><span class="wn-chevron">⌄</span></div>
+                    </div>
+                    <div class="wn-card-body" style="display:none;">
+                        <div class="wn-old-label">Old</div>
+                        <p class="wn-old-text">The learner describes scientific, societal, or ethical considerations related to the claim, its supporting evidence, and the reasoning connecting them.</p>
+                        <div class="wn-new-label">New</div>
+                        <p class="wn-new-text">The learner <span class="verb">evaluates</span> whether a scientific claim addresses scientific, societal, and ethical considerations, including what evidence is <span class="verb">missing</span>, who is affected, and what consequences are unaddressed.</p>
+                        <div class="wn-why-box">
+                            <div class="wn-why-label">Why</div>
+                            <p class="wn-why-short">"Describes" was too neutral and passive — just listing factors. "Evaluates whether... including what is missing" requires critical analysis: finding gaps, not just listing. This is distinctly evaluative, clearly belonging in C2.</p>
+                        </div>
+                        <div class="wn-note-wrapper" id="wn-note-ext-c2es3">
+                            <button class="wn-note-toggle" onclick="wnToggleNote('wn-note-ext-c2es3')"><span class="wn-note-arrow">▶</span> 📝 Extended Rationale</button>
+                            <div class="wn-note-body">Students must judge the <em>quality</em> of an argument by identifying omissions. To find what's missing, they must first understand what <em>should</em> be there — building the mental model this Knowledge Graph visualizes.<br><br><strong style="color:rgba(255,255,255,0.8)">Comparison of student responses:</strong><br><br><span style="color:#f87171">OLD response:</span> "This claim has societal considerations like public health and access. Ethical considerations include informed consent."<br><br><span style="color:#4ade80">NEW response:</span> "This claim doesn't address how the treatment affects elderly populations. It also ignores the ethical issue of affordability."</div>
+                        </div>
+                        <div class="wn-note-wrapper" id="wn-note-mental-c2es3">
+                            <button class="wn-note-toggle" onclick="wnToggleNote('wn-note-mental-c2es3')"><span class="wn-note-arrow">▶</span> 📝 Knowledge Graph Connection</button>
+                            <div class="wn-note-body">To identify what's MISSING, students must first understand what SHOULD BE THERE. This requires building a mental model of a complete, well-supported claim:<br><br>• Claim<br>• Evidence (relevant, credible, sufficient)<br>• Reasoning connecting evidence to claim<br>• Scientific considerations (mechanism, controls, sample size)<br>• Societal considerations (who's affected, context, applications)<br>• Ethical considerations (consequences, trade-offs, fairness)<br><br><strong style="color:rgba(255,255,255,0.8)">Teaching Sequence:</strong><br>1. Teach the complete structure (knowledge graph of a well-supported claim)<br>2. Students internalize this mental model of completeness<br>3. On the PA, students compare the given claim against their mental model<br>4. They identify and explain gaps — what's missing from the complete picture</div>
+                        </div>
+                        <div class="wn-note-wrapper" id="wn-note-focus-c2es3">
+                            <button class="wn-note-toggle" onclick="wnToggleNote('wn-note-focus-c2es3')"><span class="wn-note-arrow">▶</span> 📝 Focus Shift Table</button>
+                            <div class="wn-note-body"><table style="width:100%;border-collapse:collapse;font-size:0.78rem;margin-top:4px;">
+                                <tr style="border-bottom:1px solid rgba(255,255,255,0.1)"><td style="padding:5px 8px;color:rgba(255,255,255,0.4);width:100px;"></td><td style="padding:5px 8px;color:#f87171;font-weight:600;">OLD</td><td style="padding:5px 8px;color:#4ade80;font-weight:600;">NEW</td></tr>
+                                <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 8px;color:rgba(255,255,255,0.5);font-weight:600;">Focus</td><td style="padding:5px 8px;color:rgba(255,255,255,0.6);">What's relevant</td><td style="padding:5px 8px;color:rgba(255,255,255,0.6);">What's MISSING</td></tr>
+                                <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 8px;color:rgba(255,255,255,0.5);font-weight:600;">Action</td><td style="padding:5px 8px;color:rgba(255,255,255,0.6);">Describe (list/identify)</td><td style="padding:5px 8px;color:rgba(255,255,255,0.6);">Explain gaps (critique)</td></tr>
+                                <tr style="border-bottom:1px solid rgba(255,255,255,0.06)"><td style="padding:5px 8px;color:rgba(255,255,255,0.5);font-weight:600;">Stance</td><td style="padding:5px 8px;color:rgba(255,255,255,0.6);">Neutral observation</td><td style="padding:5px 8px;color:rgba(255,255,255,0.6);">Critical analysis</td></tr>
+                                <tr><td style="padding:5px 8px;color:rgba(255,255,255,0.5);font-weight:600;">Question</td><td style="padding:5px 8px;color:rgba(255,255,255,0.6);">"What should we consider?"</td><td style="padding:5px 8px;color:rgba(255,255,255,0.6);">"What did they leave out?"</td></tr>
+                            </table></div>
+                        </div>
+                        <div class="wn-note-btn-row"><button class="wn-note-btn" onclick="wnToggleDiscussion('wn-disc-c2es3')" title="Add discussion notes">💬 Discussion Notes</button></div>
+                        <div class="wn-discussion-row" id="wn-disc-c2es3"><textarea class="wn-discussion-note" placeholder="Add meeting or review discussion notes..." onchange="wnSaveDiscussion('C2-ES3', this)"></textarea></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== C3 NO CHANGES ===== -->
+            <div class="wn-section" data-wn-comp="C3" id="wn-section-c3">
+                <div class="wn-section-header">
+                    <span class="icon">✅</span>
+                    <h2>C3 — No Changes</h2>
+                    <span class="count-pill" style="background:rgba(255,255,255,0.2); color:rgba(255,255,255,0.7);">Unchanged</span>
+                </div>
+                <div class="wn-section-line" style="background: linear-gradient(90deg, rgba(255,255,255,0.15), transparent);"></div>
+
+                <div class="wn-unchanged-card">
+                    <div class="wn-unchanged-header">
+                        <span class="checkmark">✓</span>
+                        <h3>Competency 3: Explains Real-World Systems</h3>
+                    </div>
+                    <div class="wn-unchanged-stmt">The learner explains real-world systems using scientific reasoning. (Level 2)</div>
+
+                    <div class="wn-unchanged-es"><div class="es-id">C3-ES1</div><div class="es-text">The learner identifies components of a real-world system.</div></div>
+                    <div class="wn-unchanged-es"><div class="es-id">C3-ES2</div><div class="es-text">The learner analyzes how the components of a real-world system interact with each other.</div></div>
+                    <div class="wn-unchanged-es"><div class="es-id">C3-ES3</div><div class="es-text">The learner explains observed behaviors, patterns, or outcomes within a system using scientific concepts.</div></div>
+                    <div class="wn-unchanged-es"><div class="es-id">C3-ES4</div><div class="es-text">The learner describes the cultural, societal, or ethical dimensions that influence or are influenced by the system.</div></div>
+
+                    <div class="wn-unchanged-note">Competency 3 scope, evidence statements, and all related content remain unchanged in this revision cycle. The verb choices and cognitive levels were validated during the prior review and continue to align with the Level 2 target. All 4 ES, 3 groups, and 35 scope items are unaffected.</div>
+
+                    <!-- Discussion note for C3 overall -->
+                    <div style="margin-top:10px;">
+                        <div class="wn-note-btn-row"><button class="wn-note-btn" onclick="wnToggleDiscussion('wn-disc-c3')" title="Add discussion notes">💬 Discussion Notes</button></div>
+                        <div class="wn-discussion-row" id="wn-disc-c3"><textarea class="wn-discussion-note" placeholder="Add C3 discussion notes..." onchange="wnSaveDiscussion('C3-overall', this)"></textarea></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== SUMMARY TABLE ===== -->
+            <div class="wn-section" data-wn-comp="all" id="wn-section-summary">
+                <div class="wn-section-header">
+                    <span class="icon">📋</span>
+                    <h2>Final Evidence Statements (11 Total)</h2>
+                </div>
+                <div class="wn-section-line" style="background: linear-gradient(90deg, #6cb4e4, transparent);"></div>
+
+                <div style="overflow-x:auto;">
+                    <table style="width:100%;border-collapse:collapse;font-size:0.82rem;">
+                        <thead>
+                            <tr style="background:rgba(74,144,194,0.15);">
+                                <th style="padding:10px 12px;text-align:left;color:#6cb4e4;font-weight:700;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.04em;border-bottom:1px solid rgba(255,255,255,0.1);width:80px;">ES</th>
+                                <th style="padding:10px 12px;text-align:left;color:#6cb4e4;font-weight:700;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.04em;border-bottom:1px solid rgba(255,255,255,0.1);">Evidence Statement (Final)</th>
+                                <th style="padding:10px 12px;text-align:center;color:#6cb4e4;font-weight:700;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.04em;border-bottom:1px solid rgba(255,255,255,0.1);width:90px;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="wn-summary-tbody">
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 12px;color:#ff6b6b;font-weight:700;font-family:Consolas,monospace;">C1-ES1</td><td style="padding:8px 12px;color:rgba(255,255,255,0.85);">The learner selects relevant, credible evidence that supports a scientific claim.</td><td style="text-align:center;"><span class="wn-badge wn-badge-revised" style="font-size:0.6rem;">Revised</span></td></tr>
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);background:rgba(74,222,128,0.04);"><td style="padding:8px 12px;color:#ff6b6b;font-weight:700;font-family:Consolas,monospace;">C1-ES2</td><td style="padding:8px 12px;color:rgba(255,255,255,0.85);">The learner constructs a scientific claim using evidence and reasoning.</td><td style="text-align:center;"><span class="wn-badge wn-badge-new" style="font-size:0.6rem;">New</span></td></tr>
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 12px;color:#ff6b6b;font-weight:700;font-family:Consolas,monospace;">C1-ES3</td><td style="padding:8px 12px;color:rgba(255,255,255,0.85);">The learner explains how evidence logically supports or fails to support a claim.</td><td style="text-align:center;"><span class="wn-badge wn-badge-renumbered" style="font-size:0.6rem;">Renum</span></td></tr>
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 12px;color:#ff6b6b;font-weight:700;font-family:Consolas,monospace;">C1-ES4</td><td style="padding:8px 12px;color:rgba(255,255,255,0.85);">The learner explains the potential social or ethical benefits, risks, or consequences of the dissemination of a scientific claim.</td><td style="text-align:center;"><span class="wn-badge wn-badge-renumbered" style="font-size:0.6rem;">Rev+Renum</span></td></tr>
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);border-top:2px solid rgba(255,255,255,0.08);"><td style="padding:8px 12px;color:#4ecdc4;font-weight:700;font-family:Consolas,monospace;">C2-ES1</td><td style="padding:8px 12px;color:rgba(255,255,255,0.6);">The learner describes the quality of evidence used to support a scientific claim.</td><td style="text-align:center;color:rgba(255,255,255,0.3);font-size:0.7rem;">—</td></tr>
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 12px;color:#4ecdc4;font-weight:700;font-family:Consolas,monospace;">C2-ES2</td><td style="padding:8px 12px;color:rgba(255,255,255,0.6);">The learner explains misinformation, bias, or unsupported assumptions and conclusions related to a claim or its evidence.</td><td style="text-align:center;color:rgba(255,255,255,0.3);font-size:0.7rem;">—</td></tr>
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 12px;color:#4ecdc4;font-weight:700;font-family:Consolas,monospace;">C2-ES3</td><td style="padding:8px 12px;color:rgba(255,255,255,0.85);">The learner evaluates whether a scientific claim addresses scientific, societal, and ethical considerations, including what evidence is missing, who is affected, and what consequences are unaddressed.</td><td style="text-align:center;"><span class="wn-badge wn-badge-revised" style="font-size:0.6rem;">Revised</span></td></tr>
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);border-top:2px solid rgba(255,255,255,0.08);"><td style="padding:8px 12px;color:#a78bfa;font-weight:700;font-family:Consolas,monospace;">C3-ES1</td><td style="padding:8px 12px;color:rgba(255,255,255,0.6);">The learner identifies components of a real-world system.</td><td style="text-align:center;color:rgba(255,255,255,0.3);font-size:0.7rem;">—</td></tr>
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 12px;color:#a78bfa;font-weight:700;font-family:Consolas,monospace;">C3-ES2</td><td style="padding:8px 12px;color:rgba(255,255,255,0.6);">The learner analyzes how the components of a real-world system interact with each other.</td><td style="text-align:center;color:rgba(255,255,255,0.3);font-size:0.7rem;">—</td></tr>
+                            <tr style="border-bottom:1px solid rgba(255,255,255,0.06);"><td style="padding:8px 12px;color:#a78bfa;font-weight:700;font-family:Consolas,monospace;">C3-ES3</td><td style="padding:8px 12px;color:rgba(255,255,255,0.6);">The learner explains observed behaviors, patterns, or outcomes within a system using scientific concepts.</td><td style="text-align:center;color:rgba(255,255,255,0.3);font-size:0.7rem;">—</td></tr>
+                            <tr><td style="padding:8px 12px;color:#a78bfa;font-weight:700;font-family:Consolas,monospace;">C3-ES4</td><td style="padding:8px 12px;color:rgba(255,255,255,0.6);">The learner describes the cultural, societal, or ethical dimensions that influence or are influenced by the system.</td><td style="text-align:center;color:rgba(255,255,255,0.3);font-size:0.7rem;">—</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
 <script>
 // ===== DATA =====
 const nodes = [
@@ -689,13 +1085,14 @@ const nodes = [
     
     // Evidence Statements - C1
     { id: "C1-ES1", name: "C1-ES1", description: "The learner selects relevant, credible evidence that supports a scientific claim.", type: "evidence_statement", competency: "C1" },
-    { id: "C1-ES2", name: "C1-ES2", description: "The learner explains how evidence logically supports or fails to support a claim.", type: "evidence_statement", competency: "C1" },
-    { id: "C1-ES3", name: "C1-ES3", description: "The learner explains the potential social or ethical benefits, risks, or consequences of the dissemination of a scientific claim.", type: "evidence_statement", competency: "C1" },
+    { id: "C1-ES2", name: "C1-ES2", description: "The learner constructs a scientific claim using evidence and reasoning.", type: "evidence_statement", competency: "C1" },
+    { id: "C1-ES3", name: "C1-ES3", description: "The learner explains how evidence logically supports or fails to support a claim.", type: "evidence_statement", competency: "C1" },
+    { id: "C1-ES4", name: "C1-ES4", description: "The learner explains the potential social or ethical benefits, risks, or consequences of the dissemination of a scientific claim.", type: "evidence_statement", competency: "C1" },
     
     // Evidence Statements - C2
     { id: "C2-ES1", name: "C2-ES1", description: "The learner describes the quality of evidence used to support a scientific claim.", type: "evidence_statement", competency: "C2" },
     { id: "C2-ES2", name: "C2-ES2", description: "The learner explains misinformation, bias, or unsupported assumptions and conclusions related to a claim or its evidence.", type: "evidence_statement", competency: "C2" },
-    { id: "C2-ES3", name: "C2-ES3", description: "The learner evaluates whether a scientific claim addresses scientific, societal, and ethical considerations, including what evidence is missing, who is affected, and what consequences are unaddressed.", type: "evidence_statement", competency: "C2" },
+    { id: "C2-ES3", name: "C2-ES3", description: "The learner explains what is missing from a claim\'s evidence or reasoning, including gaps in scientific, societal, or ethical considerations.", type: "evidence_statement", competency: "C2" },
     
     // Evidence Statements - C3
     { id: "C3-ES1", name: "C3-ES1", description: "The learner identifies components of a real-world system.", type: "evidence_statement", competency: "C3" },
@@ -722,7 +1119,7 @@ const nodes = [
     { id: "G-C3-2", name: "Applying Scientific Reasoning", description: "How systems work and change", type: "group", focus: "How does the system work, and what happens when something changes?" },
     { id: "G-C3-3", name: "Societal and Ethical Dimensions", description: "Human and value perspectives", type: "group", focus: "How do people, values, and perspectives shape the system and its impacts?" },
     
-    // Scope Items - C1-ES1 Group 1
+    // Scope Items - C1-ES1 Group 1: Scientific Claims
     { id: "S1", name: "Defining what is a scientific claim", type: "scope_item", status: "magenta", es: "C1-ES1", group: "G-C1-1", competency: "C1" },
     { id: "S2", name: "Identify the role of scientific claims in asking questions and sharing ideas", type: "scope_item", status: "magenta", es: "C1-ES1", group: "G-C1-1", competency: "C1" },
     { id: "S3", name: "Identify the components of a scientific claim", type: "scope_item", status: "green", es: "C1-ES1", group: "G-C1-1", competency: "C1" },
@@ -730,40 +1127,42 @@ const nodes = [
     { id: "S5", name: "Distinguish between statements of fact, opinion, and inference", type: "scope_item", status: "green", es: "C1-ES1", group: "G-C1-1", competency: "C1" },
     { id: "S6", name: "Distinguishing scientific claims from non-scientific claims (e.g., pseudoscience and misinformation)", type: "scope_item", status: "magenta", es: "C1-ES1", group: "G-C1-1", competency: "C1" },
     
-    // Scope Items - C1-ES1 Group 2
+    // Scope Items - C1-ES1 Group 2: Data as Evidence
     { id: "S7", name: "Distinguishing quantitative, qualitative, and observational evidence", type: "scope_item", status: "green", es: "C1-ES1", group: "G-C1-2", competency: "C1" },
     { id: "S8", name: "Considering bias, assumptions, and credibility of sources", type: "scope_item", status: "green", es: "C1-ES1", group: "G-C1-2", competency: "C1" },
     { id: "S9", name: "Identifying underlying assumptions in claims and evidence", type: "scope_item", status: "green", es: "C1-ES1", group: "G-C1-2", competency: "C1" },
     { id: "S10", name: "Locating evidence through secondary sources accessible to non-specialists", type: "scope_item", status: "magenta", es: "C1-ES1", group: "G-C1-2", competency: "C1" },
     { id: "S11", name: "Evaluating the credibility of secondary sources", type: "scope_item", status: "green", es: "C1-ES1", group: "G-C1-2", competency: "C1" },
     
-    // Scope Items - C1-ES1 Group 3
+    // Scope Items - C1-ES1 Group 3: Reasoning and Support
     { id: "S12", name: "Understanding how the type of source affects credibility", type: "scope_item", status: "green", es: "C1-ES1", group: "G-C1-3", competency: "C1" },
     
-    // Scope Items - C1-ES1 Group 4
+    // Scope Items - C1-ES1 Group 4: Nature of Scientific Knowledge
     { id: "S13", name: "Differentiating scientific claims from scientific knowledge", type: "scope_item", status: "magenta", es: "C1-ES1", group: "G-C1-4", competency: "C1" },
     { id: "S14", name: "Recognizing how scientific knowledge evolves over time", type: "scope_item", status: "magenta", es: "C1-ES1", group: "G-C1-4", competency: "C1" },
     { id: "S15", name: "Recognizing that scientific claims are testable and open to revision", type: "scope_item", status: "magenta", es: "C1-ES1", group: "G-C1-4", competency: "C1" },
     { id: "S16", name: "Considering the historical context of scientific discovery", type: "scope_item", status: "magenta", es: "C1-ES1", group: "G-C1-4", competency: "C1" },
     { id: "S17", name: "Understanding the role of peer review in validating scientific findings", type: "scope_item", status: "magenta", es: "C1-ES1", group: "G-C1-4", competency: "C1" },
     
-    // Scope Items - C1-ES2 Group 1
+    // Scope Items - C1-ES2 (NEW): Scientific Claims
     { id: "S18", name: "Constructing a scientific claim", type: "scope_item", status: "magenta", es: "C1-ES2", group: "G-C1-1", competency: "C1" },
     { id: "S19", name: "Using the CER Framework for Constructing a Claim", type: "scope_item", status: "cyan", es: "C1-ES2", group: "G-C1-1", competency: "C1" },
-    { id: "S20", name: "Translating scientific language to plain language", type: "scope_item", status: "green", es: "C1-ES2", group: "G-C1-1", competency: "C1" },
     
-    // Scope Items - C1-ES2 Group 3
-    { id: "S21", name: "Connecting evidence to claims clearly", type: "scope_item", status: "green", es: "C1-ES2", group: "G-C1-3", competency: "C1" },
-    { id: "S22", name: "Explaining why evidence adequately supports a claim", type: "scope_item", status: "green", es: "C1-ES2", group: "G-C1-3", competency: "C1" },
-    { id: "S23", name: "Identifying when evidence does not adequately support a claim", type: "scope_item", status: "green", es: "C1-ES2", group: "G-C1-3", competency: "C1" },
-    { id: "S24", name: "Using scientific principles to explain why evidence supports a claim", type: "scope_item", status: "green", es: "C1-ES2", group: "G-C1-3", competency: "C1" },
-    { id: "S25", name: "Avoiding circular reasoning where evidence is restated as justification", type: "scope_item", status: "cyan", es: "C1-ES2", group: "G-C1-3", competency: "C1" },
-    { id: "S26", name: "Distinguishing between correlation and causation when connecting evidence to claims", type: "scope_item", status: "green", es: "C1-ES2", group: "G-C1-3", competency: "C1" },
+    // Scope Items - C1-ES3 (was C1-ES2): Scientific Claims
+    { id: "S20", name: "Translating scientific language to plain language", type: "scope_item", status: "green", es: "C1-ES3", group: "G-C1-1", competency: "C1" },
     
-    // Scope Items - C1-ES3 Group 4
-    { id: "S27", name: "Considering ethical implications of communicating scientific claims to the public", type: "scope_item", status: "green", es: "C1-ES3", group: "G-C1-4", competency: "C1" },
-    { id: "S28", name: "Not about ethics as content, but ethics as consequence", type: "scope_item", status: "green", es: "C1-ES3", group: "G-C1-4", competency: "C1" },
-    { id: "S29", name: "Aligns with misinformation and public impact examples", type: "scope_item", status: "green", es: "C1-ES3", group: "G-C1-4", competency: "C1" },
+    // Scope Items - C1-ES3 Group 3: Reasoning and Support
+    { id: "S21", name: "Connecting evidence to claims clearly", type: "scope_item", status: "green", es: "C1-ES3", group: "G-C1-3", competency: "C1" },
+    { id: "S22", name: "Explaining why evidence adequately supports a claim", type: "scope_item", status: "green", es: "C1-ES3", group: "G-C1-3", competency: "C1" },
+    { id: "S23", name: "Identifying when evidence does not adequately support a claim", type: "scope_item", status: "green", es: "C1-ES3", group: "G-C1-3", competency: "C1" },
+    { id: "S24", name: "Using scientific principles to explain why evidence supports a claim", type: "scope_item", status: "green", es: "C1-ES3", group: "G-C1-3", competency: "C1" },
+    { id: "S25", name: "Avoiding circular reasoning where evidence is restated as justification", type: "scope_item", status: "cyan", es: "C1-ES3", group: "G-C1-3", competency: "C1" },
+    { id: "S26", name: "Distinguishing between correlation and causation when connecting evidence to claims", type: "scope_item", status: "green", es: "C1-ES3", group: "G-C1-3", competency: "C1" },
+    
+    // Scope Items - C1-ES4 (was C1-ES3): Nature of Scientific Knowledge
+    { id: "S27", name: "Considering ethical implications of communicating scientific claims to the public", type: "scope_item", status: "green", es: "C1-ES4", group: "G-C1-4", competency: "C1" },
+    { id: "S28", name: "Not about ethics as content, but ethics as consequence", type: "scope_item", status: "green", es: "C1-ES4", group: "G-C1-4", competency: "C1" },
+    { id: "S29", name: "Aligns with misinformation and public impact examples", type: "scope_item", status: "green", es: "C1-ES4", group: "G-C1-4", competency: "C1" },
     
     // C2-ES1 Scope Items
     { id: "S30", name: "Analyze evidence used to support existing scientific claims", type: "scope_item", status: "green", es: "C2-ES1", group: "G-C2-1", competency: "C2" },
@@ -817,12 +1216,18 @@ const nodes = [
     { id: "S70", name: "Describe how components influence one another", type: "scope_item", status: "green", es: "C3-ES2", group: "G-C3-1", competency: "C3" },
     { id: "S71", name: "Recognize feedback loops in plain language (reinforcing or balancing)", type: "scope_item", status: "green", es: "C3-ES2", group: "G-C3-1", competency: "C3" },
     { id: "S72", name: "Explain the value of a systems perspective", type: "scope_item", status: "magenta", es: "C3-ES2", group: "G-C3-1", competency: "C3" },
+    { id: "S72b", name: "Describe how relationships between parts shape outcomes", type: "scope_item", status: "magenta", es: "C3-ES2", group: "G-C3-1", competency: "C3" },
     { id: "S73", name: "Communicate system understanding clearly", type: "scope_item", status: "green", es: "C3-ES2", group: "G-C3-1", competency: "C3" },
+    { id: "S73b", name: "Explain system structure or behavior using straightforward language", type: "scope_item", status: "green", es: "C3-ES2", group: "G-C3-1", competency: "C3" },
     { id: "S74", name: "Use simple visuals (e.g., labeled diagram, arrows showing influence)", type: "scope_item", status: "magenta", es: "C3-ES2", group: "G-C3-1", competency: "C3" },
     { id: "S75", name: "Connect foundational scientific concepts to system behavior", type: "scope_item", status: "green", es: "C3-ES2", group: "G-C3-2", competency: "C3" },
+    { id: "S75b", name: "Explain how interactions are more appropriate than cause-and-effect reasoning for a given system", type: "scope_item", status: "green", es: "C3-ES2", group: "G-C3-2", competency: "C3" },
     { id: "S76", name: "Ask scientific questions about system behavior", type: "scope_item", status: "cyan", es: "C3-ES2", group: "G-C3-2", competency: "C3" },
+    { id: "S76b", name: "Ask what influences what in the system", type: "scope_item", status: "cyan", es: "C3-ES2", group: "G-C3-2", competency: "C3" },
+    { id: "S76c", name: "Ask what might change if a component changes", type: "scope_item", status: "cyan", es: "C3-ES2", group: "G-C3-2", competency: "C3" },
     { id: "S77", name: "Explain how changes in one part influence other components over time", type: "scope_item", status: "green", es: "C3-ES2", group: "G-C3-2", competency: "C3" },
     { id: "S78", name: "Trace how a change moves through the system step-by-step", type: "scope_item", status: "green", es: "C3-ES2", group: "G-C3-2", competency: "C3" },
+    { id: "S78b", name: "Identify which components are most affected and why", type: "scope_item", status: "green", es: "C3-ES2", group: "G-C3-2", competency: "C3" },
     { id: "S79", name: "Describe how feedback loops may amplify or reduce the effects", type: "scope_item", status: "green", es: "C3-ES2", group: "G-C3-2", competency: "C3" },
     { id: "S80", name: "Explain ripple effects across connected components", type: "scope_item", status: "green", es: "C3-ES2", group: "G-C3-2", competency: "C3" },
     
@@ -833,6 +1238,8 @@ const nodes = [
     { id: "S84", name: "Explain how the concept helps interpret what is happening in the system", type: "scope_item", status: "green", es: "C3-ES3", group: "G-C3-2", competency: "C3" },
     { id: "S85", name: "Ask why outcomes may differ across contexts or conditions", type: "scope_item", status: "cyan", es: "C3-ES3", group: "G-C3-2", competency: "C3" },
     { id: "S86", name: "Describe outcomes based on interactions among system components", type: "scope_item", status: "green", es: "C3-ES3", group: "G-C3-2", competency: "C3" },
+    { id: "S86b", name: "Use the relationships in the system to explain outcomes (not isolated events)", type: "scope_item", status: "green", es: "C3-ES3", group: "G-C3-2", competency: "C3" },
+    { id: "S86c", name: "Support explanations with scenario information", type: "scope_item", status: "green", es: "C3-ES3", group: "G-C3-2", competency: "C3" },
     
     // C3-ES4 Scope Items
     { id: "S87", name: "Explain intended and unintended impacts of changes within a system", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-2", competency: "C3" },
@@ -841,13 +1248,21 @@ const nodes = [
     { id: "S90", name: "Consider cultural, societal, and ethical perspectives in systems analysis", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
     { id: "S91", name: "Identify how human choices influence system behavior", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
     { id: "S92", name: "Consider how beliefs, incentives, or norms shape decisions", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
+    { id: "S92b", name: "Identify relevant societal or ethical considerations at an introductory level", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
     { id: "S93", name: "Acknowledge trade-offs and value-based considerations", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
     { id: "S94", name: "Identify benefits and costs connected to decisions in the system", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
     { id: "S95", name: "Explain why stakeholders may prioritize different outcomes", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
     { id: "S96", name: "Recognize how societies, cultures, and governments function within systems", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
+    { id: "S96b", name: "Identify how policies, rules, or institutions affect system behavior", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
+    { id: "S96c", name: "Describe how access and resources influence outcomes", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
     { id: "S97", name: "Consider how impacts differ across groups or perspectives", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
+    { id: "S97b", name: "Identify who is affected differently and how", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
+    { id: "S97c", name: "Explain how perspective changes what outcomes are emphasized", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
     { id: "S98", name: "Recognize human-centered biases in systems analysis", type: "scope_item", status: "cyan", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
+    { id: "S98b", name: "Identify assumptions that shape interpretation", type: "scope_item", status: "cyan", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
+    { id: "S98c", name: "Notice common biases (e.g., focusing on short-term outcomes or single causes)", type: "scope_item", status: "cyan", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
     { id: "S99", name: "Reflect on how perspective influences interpretation and communication", type: "scope_item", status: "cyan", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
+    { id: "S99b", name: "Explain how one\'s perspective may affect conclusions", type: "scope_item", status: "cyan", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
     { id: "S100", name: "Communicate explanations in a clear, fair way across viewpoints", type: "scope_item", status: "green", es: "C3-ES4", group: "G-C3-3", competency: "C3" },
 ];
 
@@ -2812,10 +3227,12 @@ function ccwRunCompare() {
     
     const esNodes = nodes.filter(n => n.type === 'evidence_statement' && n.competency === comp);
     let html = `<div style="font-size:0.78rem;font-weight:700;color:#4a90c2;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.04em;">Knowledge Graph — ${comp}: ${compMap[comp].label}</div>`;
+    html += `<div style="padding:10px 14px;margin-bottom:14px;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.25);border-radius:8px;font-size:0.85rem;color:#e8e8e8;line-height:1.5;"><span style="font-weight:700;color:#ff6b6b;">${comp}</span> — <em>${compNode.description}</em></div>`;
     
     esNodes.forEach(es => {
         html += `<div class="ccw-compare-es-group">`;
         html += `<div class="ccw-compare-es-title">${es.name}</div>`;
+        html += `<div style="padding:8px 12px;font-size:0.8rem;color:#b0c4de;background:rgba(78,205,196,0.06);border-left:1px solid #3a4a6a;border-right:1px solid #3a4a6a;line-height:1.5;font-style:italic;">${es.description}</div>`;
         
         // Get groups for this ES
         const groups = nodes.filter(n => n.type === 'group' && 
@@ -2898,8 +3315,234 @@ if (prevPlannerUser) {
     renderPlanner();
 }
 
+// ===== WHAT'S NEW TAB =====
+let wnDiscussionNotes = {};
+try { const s = localStorage.getItem('es-whatsnew-notes'); if (s) wnDiscussionNotes = JSON.parse(s); } catch(e) {}
+
+function wnToggleCard(cardId) {
+    const card = document.getElementById(cardId);
+    if (!card) return;
+    const body = card.querySelector('.wn-card-body');
+    const hint = card.querySelector('.wn-card-hint');
+    const isExpanded = card.classList.toggle('expanded');
+    body.style.display = isExpanded ? 'block' : 'none';
+    if (hint) hint.textContent = isExpanded ? 'collapse' : 'expand';
+}
+
+function wnToggleNote(wrapperId) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    const btn = wrapper.querySelector('.wn-note-toggle');
+    const body = wrapper.querySelector('.wn-note-body');
+    const isOpen = wrapper.classList.toggle('open');
+    btn.classList.toggle('open', isOpen);
+    body.classList.toggle('open', isOpen);
+}
+
+function wnToggleDiscussion(rowId) {
+    const row = document.getElementById(rowId);
+    if (!row) return;
+    const isOpen = row.classList.toggle('open');
+    if (isOpen) {
+        const ta = row.querySelector('textarea');
+        if (ta) ta.focus();
+    }
+}
+
+function wnSaveDiscussion(esId, textarea) {
+    const val = textarea.value.trim();
+    if (val) wnDiscussionNotes[esId] = val;
+    else delete wnDiscussionNotes[esId];
+    try { localStorage.setItem('es-whatsnew-notes', JSON.stringify(wnDiscussionNotes)); } catch(e) {}
+    // Update button appearance
+    const noteRow = textarea.closest('.wn-discussion-row');
+    const btnRow = noteRow?.previousElementSibling;
+    const btn = btnRow?.querySelector('.wn-note-btn');
+    if (btn) btn.classList.toggle('has-note', !!val);
+}
+
+function wnExpandAll() {
+    document.querySelectorAll('.wn-card').forEach(card => {
+        card.classList.add('expanded');
+        const body = card.querySelector('.wn-card-body');
+        if (body) body.style.display = 'block';
+        const hint = card.querySelector('.wn-card-hint');
+        if (hint) hint.textContent = 'collapse';
+    });
+}
+
+function wnCollapseAll() {
+    document.querySelectorAll('.wn-card').forEach(card => {
+        card.classList.remove('expanded');
+        const body = card.querySelector('.wn-card-body');
+        if (body) body.style.display = 'none';
+        const hint = card.querySelector('.wn-card-hint');
+        if (hint) hint.textContent = 'expand';
+    });
+    // Also collapse all note toggles
+    document.querySelectorAll('.wn-note-wrapper.open').forEach(w => {
+        w.classList.remove('open');
+        w.querySelector('.wn-note-toggle')?.classList.remove('open');
+        w.querySelector('.wn-note-body')?.classList.remove('open');
+    });
+}
+
+function wnFilter(comp, btn) {
+    // Update button states
+    document.querySelectorAll('.wn-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    
+    // Show/hide sections
+    document.querySelectorAll('.wn-section').forEach(section => {
+        const sectionComp = section.getAttribute('data-wn-comp');
+        if (comp === 'all' || sectionComp === comp || sectionComp === 'all') {
+            section.style.display = '';
+        } else {
+            section.style.display = 'none';
+        }
+    });
+}
+
+// Load saved discussion notes into textareas on tab switch
+function wnLoadNotes() {
+    Object.keys(wnDiscussionNotes).forEach(esId => {
+        // Find the textarea by looking for the discussion row
+        const cards = document.querySelectorAll('.wn-discussion-row textarea');
+        cards.forEach(ta => {
+            const row = ta.closest('.wn-discussion-row');
+            if (row) {
+                const onchangeAttr = ta.getAttribute('onchange') || '';
+                const match = onchangeAttr.match(/wnSaveDiscussion\('([^']+)'/);
+                if (match && match[1] === esId && wnDiscussionNotes[esId]) {
+                    ta.value = wnDiscussionNotes[esId];
+                    // Mark the button
+                    const btnRow = row.previousElementSibling;
+                    const btn = btnRow?.querySelector('.wn-note-btn');
+                    if (btn) btn.classList.add('has-note');
+                }
+            }
+        });
+    });
+}
+
+// Load notes when What's New tab is shown
+document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+        if (this.dataset.tab === 'whatsnew') {
+            setTimeout(wnLoadNotes, 50);
+        }
+    });
+});
+
 // Initialize Lucide icons
 if (typeof lucide !== 'undefined') lucide.createIcons();
+
+
+
+
+
+// ===== CHANGELOG / WHAT'S NEW (v4 - inline markers) =====
+var changelogActive = false;
+
+var changelogData = {
+    "C1-ES2": { type: "new", note: "NEW evidence statement. Focuses on constructing scientific claims using evidence and reasoning." },
+    "C1-ES3": { type: "renamed", old: "Was C1-ES2", note: "Renumbered from C1-ES2 to C1-ES3. Content unchanged." },
+    "C1-ES4": { type: "renamed", old: "Was C1-ES3", note: "Renumbered from C1-ES3 to C1-ES4. Content unchanged." },
+    "C2-ES3": { type: "changed", old: "Was: evaluates whether a claim addresses considerations...", note: "Now: explains what is missing from a claim\u2019s evidence or reasoning." },
+    "S18": { type: "moved", note: "Now under NEW C1-ES2 (was under old C1-ES2)" },
+    "S19": { type: "moved", note: "Now under NEW C1-ES2 (was under old C1-ES2)" },
+    "S21": { type: "moved", note: "Now under C1-ES3 (was under old C1-ES2)" },
+    "S22": { type: "moved", note: "Now under C1-ES3 (was under old C1-ES2)" },
+    "S23": { type: "moved", note: "Now under C1-ES3 (was under old C1-ES2)" },
+    "S24": { type: "moved", note: "Now under C1-ES3 (was under old C1-ES2)" },
+    "S25": { type: "moved", note: "Now under C1-ES3 (was under old C1-ES2)" },
+    "S26": { type: "moved", note: "Now under C1-ES3 (was under old C1-ES2)" },
+    "S27": { type: "moved", note: "Now under C1-ES4 (was under old C1-ES3)" },
+    "S28": { type: "moved", note: "Now under C1-ES4 (was under old C1-ES3)" },
+    "S29": { type: "moved", note: "Now under C1-ES4 (was under old C1-ES3)" },
+    "S72b": { type: "new", note: "NEW \u2014 Describe how relationships between parts shape outcomes" },
+    "S73b": { type: "new", note: "NEW \u2014 Explain system structure or behavior using straightforward language" },
+    "S75b": { type: "new", note: "NEW \u2014 Explain how interactions > cause-and-effect reasoning" },
+    "S76b": { type: "new", note: "NEW \u2014 Ask what influences what in the system" },
+    "S76c": { type: "new", note: "NEW \u2014 Ask what might change if a component changes" },
+    "S78b": { type: "new", note: "NEW \u2014 Identify which components are most affected and why" },
+    "S86b": { type: "new", note: "NEW \u2014 Use relationships in the system to explain outcomes" },
+    "S86c": { type: "new", note: "NEW \u2014 Support explanations with scenario information" },
+    "S92b": { type: "new", note: "NEW \u2014 Identify relevant societal/ethical considerations" },
+    "S96b": { type: "new", note: "NEW \u2014 Identify how policies/institutions affect system behavior" },
+    "S96c": { type: "new", note: "NEW \u2014 Describe how access and resources influence outcomes" },
+    "S97b": { type: "new", note: "NEW \u2014 Identify who is affected differently and how" },
+    "S97c": { type: "new", note: "NEW \u2014 Explain how perspective changes emphasized outcomes" },
+    "S98b": { type: "new", note: "NEW \u2014 Identify assumptions that shape interpretation" },
+    "S98c": { type: "new", note: "NEW \u2014 Notice common biases (e.g., short-term focus)" },
+    "S99b": { type: "new", note: "NEW \u2014 Explain how one\u2019s perspective may affect conclusions" }
+};
+
+function makeMarkerHTML(entry) {
+    var icons = { "new": "\uD83C\uDD95", changed: "\uD83D\uDCDD", moved: "\u21AA\uFE0F", renamed: "\uD83D\uDD04" };
+    var labels = { "new": "New", changed: "Changed", moved: "Moved", renamed: "Renumbered" };
+    var h = '<span class="changelog-marker">';
+    h += '<span class="changelog-star">\u2726</span>';
+    h += '<span class="changelog-bubble">';
+    h += '<span class="cb-title">' + (icons[entry.type] || '') + ' ' + (labels[entry.type] || 'Updated') + '</span>';
+    if (entry.old) h += '<span class="cb-old" style="display:block;">\u2296 ' + entry.old + '</span>';
+    if (entry.note) h += '<span class="cb-note" style="display:block;">\u2192 ' + entry.note + '</span>';
+    h += '</span></span>';
+    return h;
+}
+
+function applyChangelogMarkers() {
+    removeChangelogMarkers();
+    // Tree view: find headers by data-id
+    document.querySelectorAll('.tree-node[data-id]').forEach(function(el) {
+        var id = el.getAttribute('data-id');
+        if (!changelogData[id]) return;
+        // Insert marker into the tree-title span (first one in this node only)
+        var titleEl = el.querySelector(':scope > .tree-node-header .tree-title');
+        if (titleEl && !titleEl.querySelector('.changelog-marker')) {
+            titleEl.insertAdjacentHTML('beforeend', makeMarkerHTML(changelogData[id]));
+        }
+    });
+    // Planner view
+    document.querySelectorAll('.planner-scope-row[data-scope-id]').forEach(function(row) {
+        var sid = row.getAttribute('data-scope-id');
+        if (!changelogData[sid]) return;
+        var textEl = row.querySelector('.planner-scope-text');
+        if (textEl && !textEl.querySelector('.changelog-marker')) {
+            textEl.insertAdjacentHTML('beforeend', makeMarkerHTML(changelogData[sid]));
+        }
+    });
+}
+
+function removeChangelogMarkers() {
+    document.querySelectorAll('.changelog-marker').forEach(function(el) { el.remove(); });
+}
+
+function toggleWhatsNew() {
+    changelogActive = !changelogActive;
+    document.querySelectorAll('.whats-new-btn').forEach(function(btn) {
+        btn.classList.toggle('active', changelogActive);
+        btn.textContent = changelogActive ? '\u2726 What\u2019s New: ON' : '\u2726 What\u2019s New';
+    });
+    if (changelogActive) {
+        applyChangelogMarkers();
+    } else {
+        removeChangelogMarkers();
+    }
+}
+
+// Re-apply after re-renders
+var _origRenderTree4 = renderTree;
+renderTree = function() {
+    _origRenderTree4();
+    if (changelogActive) setTimeout(applyChangelogMarkers, 30);
+};
+var _origRenderPlanner4 = renderPlanner;
+renderPlanner = function(s) {
+    _origRenderPlanner4(s);
+    if (changelogActive) setTimeout(applyChangelogMarkers, 30);
+};
+
 </script>
 </body>
 </html>
